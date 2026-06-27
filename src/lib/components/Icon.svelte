@@ -20,7 +20,7 @@
 	type="mdi"
 	{path}
 	{size}
-	class={className}
+	class="inline-block shrink-0 {className}"
 	aria-hidden={label ? undefined : true}
 	aria-label={label}
 	{...rest}

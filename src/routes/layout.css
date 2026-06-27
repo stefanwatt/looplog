@@ -111,13 +111,15 @@ body {
 	color: var(--ctp-text);
 }
 
-button,
-input,
-select,
-textarea {
-	font: inherit;
-}
+@layer base {
+	button,
+	input,
+	select,
+	textarea {
+		font: inherit;
+	}
 
-a {
-	color: inherit;
+	a {
+		color: inherit;
+	}
 }

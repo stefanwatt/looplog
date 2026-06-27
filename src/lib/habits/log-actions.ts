@@ -9,6 +9,10 @@ export type HabitLogPayload = {
 	satisfaction?: number | null;
 };
 
+export type LogActionOptions = {
+	invalidate?: boolean;
+};
+
 async function getAuthenticatedClient() {
 	const supabase = createClient();
 	const {
@@ -18,7 +22,12 @@ async function getAuthenticatedClient() {
 	return { supabase, user };
 }
 
-export async function logHabit(habit: Habit, dateKey: string, payload: HabitLogPayload) {
+export async function logHabit(
+	habit: Habit,
+	dateKey: string,
+	payload: HabitLogPayload,
+	options: LogActionOptions = {}
+) {
 	const { supabase, user } = await getAuthenticatedClient();
 	await upsertLog(supabase, user.id, habit, dateKey, {
 		status: 'logged',
@@ -26,16 +35,24 @@ export async function logHabit(habit: Habit, dateKey: string, payload: HabitLogP
 		actualTime: payload.actualTime,
 		satisfaction: payload.satisfaction
 	});
-	await invalidateAll();
+	if (options.invalidate !== false) {
+		await invalidateAll();
+	}
 }
 
-export async function skipHabit(habit: Habit, dateKey: string) {
+export async function skipHabit(habit: Habit, dateKey: string, options: LogActionOptions = {}) {
 	const { supabase, user } = await getAuthenticatedClient();
 	await upsertLog(supabase, user.id, habit, dateKey, { status: 'skipped' });
-	await invalidateAll();
+	if (options.invalidate !== false) {
+		await invalidateAll();
+	}
 }
 
-export async function resetHabitLog(habitId: string, dateKey: string) {
+export async function resetHabitLog(
+	habitId: string,
+	dateKey: string,
+	options: LogActionOptions = {}
+) {
 	const { supabase, user } = await getAuthenticatedClient();
 	const { error } = await supabase
 		.from('habit_logs')
@@ -45,5 +62,7 @@ export async function resetHabitLog(habitId: string, dateKey: string) {
 		.eq('log_date', dateKey);
 
 	if (error) throw error;
-	await invalidateAll();
+	if (options.invalidate !== false) {
+		await invalidateAll();
+	}
 }

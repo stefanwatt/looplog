@@ -5,8 +5,8 @@
 
 <a
 	href="/habits/new"
-	class="grid size-11 shrink-0 place-items-center rounded-full bg-blue no-underline shadow-md shadow-blue/35"
+	class="grid size-11 shrink-0 place-items-center rounded-full bg-blue text-white no-underline shadow-md shadow-blue/35"
 	aria-label="Create habit"
 >
-	<Icon class="text-white" path={mdiPlus} size={24} />
+	<Icon path={mdiPlus} size={24} />
 </a>

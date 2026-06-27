@@ -63,7 +63,7 @@
 		<button
 			type="submit"
 			disabled={loading}
-			class="rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
+			class="rounded-xl border-0 bg-blue py-3.5 font-semibold text-white disabled:opacity-60"
 		>
 			{loading ? 'Sending…' : 'Send magic link'}
 		</button>

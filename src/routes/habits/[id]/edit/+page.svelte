@@ -283,7 +283,7 @@
 		{#if step < 4}
 			<button
 				type="button"
-				class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
+				class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-white disabled:opacity-60"
 				disabled={step === 1 && !name.trim()}
 				onclick={nextStep}
 			>
@@ -293,7 +293,7 @@
 		{:else}
 			<button
 				type="button"
-				class="flex-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
+				class="flex-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-white disabled:opacity-60"
 				disabled={saving || deleting || !name.trim() || (!isAnytime && !anchorTime)}
 				onclick={saveHabit}
 			>

@@ -10,6 +10,7 @@
 		type HabitCardForm
 	} from '$lib/habits/card-actions';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
+	import NextStackEmptyState from '$lib/components/NextStackEmptyState.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 
 	type UndoEntry = {
@@ -25,15 +26,17 @@
 		busy = false,
 		undoAvailable = $bindable(false),
 		onlog,
-		onskip
+		onskip,
+		onundo
 	}: {
 		habits: HabitWithLog[];
 		timezone: string;
 		canSkip?: boolean;
 		busy?: boolean;
 		undoAvailable?: boolean;
-		onlog: (habit: HabitWithLog, payload: HabitLogPayload) => Promise<void>;
-		onskip?: (habit: HabitWithLog) => Promise<void>;
+		onlog: (habit: HabitWithLog, payload: HabitLogPayload) => void;
+		onskip?: (habit: HabitWithLog) => void;
+		onundo?: (habit: HabitWithLog) => void;
 	} = $props();
 
 	let dragX = $state(0);
@@ -104,57 +107,58 @@
 		};
 	}
 
-	async function handleFail() {
+	function handleFail() {
 		if (!currentHabit || busy) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
-		await onlog(currentHabit, failPayload(currentHabit));
 		lastDismissed = entry;
 		undoRestore = null;
+		onlog(currentHabit, failPayload(currentHabit));
 	}
 
-	async function handleCheck() {
+	function handleCheck() {
 		if (!currentHabit || busy || !canCheck) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
-		await onlog(currentHabit, checkPayload(currentHabit, currentForm));
 		lastDismissed = entry;
 		undoRestore = null;
+		onlog(currentHabit, checkPayload(currentHabit, currentForm));
 	}
 
-	async function handleNailedIt() {
+	function handleNailedIt() {
 		if (!currentHabit || busy || !canNailItAction) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
-		await onlog(currentHabit, nailedItPayload(currentHabit, timezone));
 		lastDismissed = entry;
 		undoRestore = null;
+		onlog(currentHabit, nailedItPayload(currentHabit, timezone));
 	}
 
-	async function handleSkip() {
+	function handleSkip() {
 		if (!currentHabit || busy || !currentCanSkip || !onskip) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
-		await onskip(currentHabit);
 		lastDismissed = entry;
 		undoRestore = null;
+		onskip(currentHabit);
 	}
 
 	function handleUndo() {
 		if (!lastDismissed) return;
 		undoRestore = lastDismissed;
+		onundo?.(lastDismissed.habit);
 		lastDismissed = null;
 	}
 </script>
@@ -195,6 +199,8 @@
 						/>
 					{/key}
 				</div>
+			{:else}
+				<NextStackEmptyState message="Nothing else up next right now." />
 			{/if}
 		</div>
 
