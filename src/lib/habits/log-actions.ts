@@ -34,3 +34,16 @@ export async function skipHabit(habit: Habit, dateKey: string) {
 	await upsertLog(supabase, user.id, habit, dateKey, { status: 'skipped' });
 	await invalidateAll();
 }
+
+export async function resetHabitLog(habitId: string, dateKey: string) {
+	const { supabase, user } = await getAuthenticatedClient();
+	const { error } = await supabase
+		.from('habit_logs')
+		.delete()
+		.eq('user_id', user.id)
+		.eq('habit_id', habitId)
+		.eq('log_date', dateKey);
+
+	if (error) throw error;
+	await invalidateAll();
+}
