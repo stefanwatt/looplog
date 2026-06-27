@@ -3,6 +3,7 @@
 	import {
 		calculateAdherence,
 		canSubmitLog,
+		defaultInputForHabit,
 		formatTimeLabel,
 		nailedItInput,
 		previewAdherenceLabel
@@ -25,9 +26,11 @@
 		busy?: boolean;
 	} = $props();
 
-	const defaults = nailedItInput(habit, timezone);
+	const defaults = defaultInputForHabit(habit, timezone);
 
-	let actualValue = $state(defaults.actualValue ?? 0);
+	let actualValue = $state<number | null>(
+		defaults.actualValue ?? (habit.type === 'do_binary' ? null : 0)
+	);
 	let actualTime = $state((defaults.actualTime ?? '12:00').slice(0, 5));
 	let satisfaction = $state(defaults.satisfaction ?? 3);
 
@@ -84,6 +87,9 @@
 			case 'do_target':
 				await onlog({ actualValue });
 				break;
+			case 'do_binary':
+				await onlog({ actualValue });
+				break;
 			case 'do_on_time':
 				await onlog({ actualTime: `${actualTime}:00`.slice(0, 8) });
 				break;
@@ -133,6 +139,28 @@
 				bind:value={actualValue}
 				disabled={busy}
 			/>
+		{:else if habit.type === 'do_binary'}
+			<p class="card__label">Did you do it?</p>
+			<div class="card__binary">
+				<button
+					type="button"
+					class="card__binary-btn"
+					class:card__binary-btn--active={actualValue === 1}
+					disabled={busy}
+					onclick={() => (actualValue = 1)}
+				>
+					Yes
+				</button>
+				<button
+					type="button"
+					class="card__binary-btn"
+					class:card__binary-btn--active={actualValue === 0}
+					disabled={busy}
+					onclick={() => (actualValue = 0)}
+				>
+					No
+				</button>
+			</div>
 		{:else if habit.type === 'do_on_time'}
 			<label class="card__label" for="time-{habit.id}">Actual time</label>
 			<input id="time-{habit.id}" type="time" bind:value={actualTime} disabled={busy} />
@@ -144,8 +172,12 @@
 	</div>
 
 	<div class="card__preview">
-		<span class="card__score">{previewScore}%</span>
-		<span class="card__label-text">{previewAdherenceLabel(previewScore)}</span>
+		{#if habit.type === 'do_binary' && actualValue == null}
+			<span class="card__label-text">Pick Yes or No</span>
+		{:else}
+			<span class="card__score">{previewScore}%</span>
+			<span class="card__label-text">{previewAdherenceLabel(previewScore)}</span>
+		{/if}
 	</div>
 
 	<div class="card__actions">
@@ -267,5 +299,30 @@
 	input[type='range'],
 	input[type='time'] {
 		width: 100%;
+	}
+
+	.card__binary {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+
+	.card__binary-btn {
+		border-radius: 0.85rem;
+		padding: 0.85rem 1rem;
+		font-weight: 600;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: #0b0f14;
+		color: inherit;
+	}
+
+	.card__binary-btn--active {
+		border-color: #0284c7;
+		background: rgba(2, 132, 199, 0.18);
+		color: #7dd3fc;
+	}
+
+	.card__binary-btn:disabled {
+		opacity: 0.5;
 	}
 </style>

@@ -1,4 +1,4 @@
-export type HabitType = 'do_target' | 'do_on_time' | 'avoid' | 'rate';
+export type HabitType = 'do_target' | 'do_on_time' | 'do_binary' | 'avoid' | 'rate';
 export type LogStatus = 'logged' | 'skipped';
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];

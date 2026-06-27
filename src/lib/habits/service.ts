@@ -208,6 +208,8 @@ export function habitTypeLabel(type: HabitType): string {
 			return 'Do (target)';
 		case 'do_on_time':
 			return 'Do (on time)';
+		case 'do_binary':
+			return 'Do (binary)';
 		case 'avoid':
 			return 'Avoid';
 		case 'rate':

@@ -9,6 +9,7 @@
 	const types: { value: HabitType; label: string; hint: string }[] = [
 		{ value: 'do_target', label: 'Do (target)', hint: 'Track amount vs a target' },
 		{ value: 'do_on_time', label: 'Do (on time)', hint: 'Wake up, start work, etc.' },
+		{ value: 'do_binary', label: 'Do (binary)', hint: 'Simple yes/no habits' },
 		{ value: 'avoid', label: 'Avoid', hint: 'Rate how well you avoided it' },
 		{ value: 'rate', label: 'Rate', hint: 'Subjective satisfaction only' }
 	];
@@ -176,6 +177,8 @@
 				<input id="grace" type="number" min="0" bind:value={graceMinutes} />
 				<label for="falloff">Minutes late for each 10% drop (after grace)</label>
 				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} />
+			{:else if type === 'do_binary'}
+				<p class="hint">Log Yes or No each day — 100% or 0% adherence.</p>
 			{:else}
 				<p class="hint">Adherence comes from your 1–5 satisfaction rating when you log.</p>
 			{/if}
