@@ -9,6 +9,11 @@ NODE_VERSION = "22"
 PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_7f7YLQiYVctClSkuPeUuAA_np0xiygx"
 PUBLIC_SUPABASE_URL = "https://yamofwdcczulvktceycm.supabase.co"
 
+[env.production.vars]
+NODE_VERSION = "22"
+PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_7f7YLQiYVctClSkuPeUuAA_np0xiygx"
+PUBLIC_SUPABASE_URL = "https://yamofwdcczulvktceycm.supabase.co"
+
 [env.production]
-compatibility_date = "2024-09-23"
-compatibility_flags = [ "nodejs_als" ]
+compatibility_date = "2026-06-27"
+compatibility_flags = ["nodejs_als"]
