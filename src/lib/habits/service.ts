@@ -111,9 +111,13 @@ export function pendingTimedHabits(habits: HabitWithLog[]): HabitWithLog[] {
 		.sort((a, b) => (a.anchor_time ?? '').localeCompare(b.anchor_time ?? ''));
 }
 
-export function nextPendingHabit(habits: HabitWithLog[], now = new Date(), timezone: string) {
+export function orderedPendingTimedHabits(
+	habits: HabitWithLog[],
+	now = new Date(),
+	timezone: string
+): HabitWithLog[] {
 	const pending = pendingTimedHabits(habits);
-	if (pending.length === 0) return null;
+	if (pending.length === 0) return [];
 
 	const nowMinutes = parseTimeToMinutes(nowTimeString(now, timezone));
 
@@ -128,7 +132,24 @@ export function nextPendingHabit(habits: HabitWithLog[], now = new Date(), timez
 		return aMinutes - bMinutes;
 	});
 
-	return pending[0] ?? null;
+	return pending;
+}
+
+export function nextPendingHabit(habits: HabitWithLog[], now = new Date(), timezone: string) {
+	return orderedPendingTimedHabits(habits, now, timezone)[0] ?? null;
+}
+
+export async function getHabit(client: Client, userId: string, habitId: string) {
+	const { data, error } = await client
+		.from('habits')
+		.select('*')
+		.eq('user_id', userId)
+		.eq('id', habitId)
+		.is('archived_at', null)
+		.maybeSingle();
+
+	if (error) throw error;
+	return data;
 }
 
 export async function createHabit(
@@ -139,6 +160,39 @@ export async function createHabit(
 	const { data, error } = await client
 		.from('habits')
 		.insert({ ...habit, user_id: userId })
+		.select('*')
+		.single();
+
+	if (error) throw error;
+	return data;
+}
+
+export async function updateHabit(
+	client: Client,
+	userId: string,
+	habitId: string,
+	updates: Database['public']['Tables']['habits']['Update']
+) {
+	const { data, error } = await client
+		.from('habits')
+		.update(updates)
+		.eq('user_id', userId)
+		.eq('id', habitId)
+		.is('archived_at', null)
+		.select('*')
+		.single();
+
+	if (error) throw error;
+	return data;
+}
+
+export async function archiveHabit(client: Client, userId: string, habitId: string) {
+	const { data, error } = await client
+		.from('habits')
+		.update({ archived_at: new Date().toISOString() })
+		.eq('user_id', userId)
+		.eq('id', habitId)
+		.is('archived_at', null)
 		.select('*')
 		.single();
 

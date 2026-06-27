@@ -9,7 +9,7 @@
 	} from '$lib/habits/adherence';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
-	import { mdiCheck, mdiClose, mdiSkipNext } from '@mdi/js';
+	import { mdiCheck, mdiClose, mdiPencil, mdiSkipNext, mdiTrophy } from '@mdi/js';
 
 	let {
 		habit,
@@ -17,14 +17,20 @@
 		onlog,
 		onskip,
 		canSkip = false,
-		busy = false
+		busy = false,
+		interactive = true,
+		dragX = $bindable(0),
+		dragging = $bindable(false)
 	}: {
 		habit: Habit;
 		timezone: string;
-		onlog: (payload: Record<string, unknown>) => Promise<void>;
+		onlog?: (payload: Record<string, unknown>) => Promise<void>;
 		onskip?: () => Promise<void>;
 		canSkip?: boolean;
 		busy?: boolean;
+		interactive?: boolean;
+		dragX?: number;
+		dragging?: boolean;
 	} = $props();
 
 	let actualValue = $state<number | null>(null);
@@ -39,8 +45,6 @@
 		satisfaction = input.satisfaction ?? 3;
 	});
 
-	let dragX = $state(0);
-	let dragging = $state(false);
 	let startX = $state(0);
 
 	const previewScore = $derived(
@@ -49,7 +53,9 @@
 
 	const canSubmit = $derived(canSubmitLog(habit, { actualValue, actualTime, satisfaction }));
 
-	const transform = $derived(`translateX(${dragX}px) rotate(${dragX * 0.04}deg)`);
+	const transform = $derived(
+		interactive ? `translateX(${dragX}px) rotate(${dragX * 0.04}deg)` : undefined
+	);
 
 	function resetDrag() {
 		dragX = 0;
@@ -57,7 +63,7 @@
 	}
 
 	function onPointerDown(event: PointerEvent) {
-		if (busy) return;
+		if (!interactive || busy) return;
 		dragging = true;
 		startX = event.clientX;
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -88,6 +94,8 @@
 	}
 
 	async function submit() {
+		if (!onlog) return;
+
 		switch (habit.type) {
 			case 'do_target':
 			case 'do_binary':
@@ -113,19 +121,30 @@
 </script>
 
 <div
-	class="select-none rounded-2xl border border-surface-0/50 bg-linear-to-b from-surface-1 to-surface-0/40 p-5 shadow-xl shadow-crust/50 transition-transform duration-150"
+	class="select-none rounded-2xl border border-surface-0/50 bg-surface-1 p-5 shadow-xl shadow-crust/50"
 	role="group"
 	aria-label="{habit.name} logging card"
 	style:transform
-	style:touch-action="pan-y"
-	onpointerdown={onPointerDown}
-	onpointermove={onPointerMove}
-	onpointerup={onPointerUp}
-	onpointercancel={onPointerUp}
+	style:transition={interactive && !dragging ? 'transform 200ms ease-out' : 'none'}
+	style:touch-action={interactive ? 'pan-y' : undefined}
+	onpointerdown={interactive ? onPointerDown : undefined}
+	onpointermove={interactive ? onPointerMove : undefined}
+	onpointerup={interactive ? onPointerUp : undefined}
+	onpointercancel={interactive ? onPointerUp : undefined}
 >
-	<div class="mb-5">
-		<p class="m-0 text-sm font-semibold text-blue">{formatTimeLabel(habit.anchor_time)}</p>
-		<h2 class="mt-1.5 mb-0 text-2xl font-bold">{habit.name}</h2>
+	<div class="mb-5 flex items-start justify-between gap-3">
+		<div>
+			<p class="m-0 text-sm font-semibold text-blue">{formatTimeLabel(habit.anchor_time)}</p>
+			<h2 class="mt-1.5 mb-0 text-2xl font-bold">{habit.name}</h2>
+		</div>
+		<a
+			href="/habits/{habit.id}/edit"
+			class="grid shrink-0 place-items-center rounded-lg p-1.5 text-subtext-0 no-underline"
+			aria-label="Edit {habit.name}"
+			onpointerdown={(event) => event.stopPropagation()}
+		>
+			<Icon path={mdiPencil} size={18} />
+		</a>
 	</div>
 
 	<div class="mb-4 grid gap-3">
@@ -200,7 +219,7 @@
 				disabled={busy}
 				onclick={nailedIt}
 			>
-				<Icon path={mdiCheck} size={20} />
+				<Icon path={mdiTrophy} size={20} />
 				Nailed it
 			</button>
 		{/if}
@@ -226,16 +245,18 @@
 		{/if}
 	</div>
 
-	<p class="mt-4 mb-0 flex items-center justify-center gap-3 text-center text-xs text-overlay-0">
-		<span class="inline-flex items-center gap-1 text-green">
-			<Icon path={mdiCheck} size={14} />
-			swipe right to log
-		</span>
-		{#if canSkip}
-			<span class="inline-flex items-center gap-1 text-red">
-				<Icon path={mdiClose} size={14} />
-				swipe left to skip
+	{#if interactive}
+		<p class="mt-4 mb-0 flex items-center justify-center gap-3 text-center text-xs text-overlay-0">
+			<span class="inline-flex items-center gap-1 text-green">
+				<Icon path={mdiCheck} size={14} />
+				swipe right to log
 			</span>
-		{/if}
-	</p>
+			{#if canSkip}
+				<span class="inline-flex items-center gap-1 text-red">
+					<Icon path={mdiClose} size={14} />
+					swipe left to skip
+				</span>
+			{/if}
+		</p>
+	{/if}
 </div>

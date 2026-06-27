@@ -14,6 +14,29 @@ export function presetToDays(preset: SchedulePreset, customDays: number[] = []):
 	}
 }
 
+export function daysToPreset(activeDays: number[]): {
+	preset: SchedulePreset;
+	customDays: number[];
+} {
+	const sorted = [...activeDays].sort((a, b) => a - b);
+
+	if (
+		sorted.length === ALL_DAYS.length &&
+		ALL_DAYS.every((day) => sorted.includes(day))
+	) {
+		return { preset: 'daily', customDays: [...ALL_DAYS] };
+	}
+
+	if (
+		sorted.length === WEEKDAYS.length &&
+		WEEKDAYS.every((day) => sorted.includes(day))
+	) {
+		return { preset: 'weekdays', customDays: [...WEEKDAYS] };
+	}
+
+	return { preset: 'custom', customDays: sorted };
+}
+
 export function isActiveOnDate(activeDays: number[], date: Date, timezone: string): boolean {
 	const weekday = weekdayInTimezone(date, timezone);
 	return activeDays.includes(weekday);

@@ -4,6 +4,10 @@ export const DEFAULT_GRACE_MINUTES = 5;
 export const DEFAULT_FALLOFF_MINUTES = 6;
 export const DEFAULT_MAX_SKIPS = 3;
 
+export function habitTypeHasConfigStep(type: HabitType): boolean {
+	return type === 'do_target' || type === 'do_on_time';
+}
+
 export function defaultScoringForType(type: HabitType) {
 	switch (type) {
 		case 'do_target':

@@ -1,48 +1,45 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
-	import type { HabitType } from '$lib/database.types';
+	import { defaultScoringForType, habitTypeHasConfigStep } from '$lib/habits/defaults';
 	import {
-		DEFAULT_MAX_SKIPS,
-		defaultScoringForType,
-		habitTypeHasConfigStep
-	} from '$lib/habits/defaults';
-	import { presetToDays, type SchedulePreset, weekdayLabel, ALL_DAYS } from '$lib/habits/schedule';
-	import { createHabit } from '$lib/habits/service';
+		ALL_DAYS,
+		daysToPreset,
+		presetToDays,
+		type SchedulePreset,
+		weekdayLabel
+	} from '$lib/habits/schedule';
+	import { archiveHabit, habitTypeLabel, updateHabit } from '$lib/habits/service';
 	import { createClient } from '$lib/supabase/client';
 	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 
-	const types: { value: HabitType; label: string; hint: string }[] = [
-		{ value: 'do_target', label: 'Do (target)', hint: 'Track amount vs a target' },
-		{ value: 'do_on_time', label: 'Do (on time)', hint: 'Wake up, start work, etc.' },
-		{ value: 'do_binary', label: 'Do (binary)', hint: 'Simple yes/no habits' },
-		{ value: 'avoid', label: 'Avoid', hint: 'Rate how well you avoided it' },
-		{ value: 'rate', label: 'Rate', hint: 'Subjective satisfaction only' }
-	];
+	let { data } = $props();
+
+	const habit = data.habit;
+	const initialSchedule = daysToPreset(habit.active_days);
 
 	let step = $state(1);
 	let saving = $state(false);
+	let deleting = $state(false);
 	let error = $state('');
 
-	let name = $state('');
-	let type = $state<HabitType>('do_target');
-	let schedulePreset = $state<SchedulePreset>('daily');
-	let customDays = $state<number[]>([1, 3, 5]);
-	let allowSkip = $state(false);
-	let maxConsecutiveSkips = $state(DEFAULT_MAX_SKIPS);
+	let name = $state(habit.name);
+	let schedulePreset = $state<SchedulePreset>(initialSchedule.preset);
+	let customDays = $state<number[]>(initialSchedule.customDays);
+	let allowSkip = $state(habit.allow_skip);
+	let maxConsecutiveSkips = $state(habit.max_consecutive_skips);
 
-	let targetValue = $state(60);
-	let targetUnit = $state('min');
-	let targetTime = $state('06:00');
-	let graceMinutes = $state(5);
-	let falloffMinutes = $state(6);
+	let targetValue = $state(Number(habit.target_value ?? 60));
+	let targetUnit = $state(habit.target_unit ?? 'min');
+	let targetTime = $state((habit.target_time ?? '06:00:00').slice(0, 5));
+	let graceMinutes = $state(habit.grace_minutes);
+	let falloffMinutes = $state(habit.falloff_minutes_per_10_percent);
 
-	let anchorTime = $state('');
-	let isAnytime = $state(false);
+	let anchorTime = $state(habit.anchor_time?.slice(0, 5) ?? '');
+	let isAnytime = $state(habit.anchor_time == null);
 
-	const hasConfigStep = $derived(habitTypeHasConfigStep(type));
-	const totalSteps = $derived(hasConfigStep ? 4 : 3);
-	const displayStep = $derived(step === 4 && !hasConfigStep ? 3 : step);
+	const hasConfigStep = habitTypeHasConfigStep(habit.type);
+	const totalSteps = hasConfigStep ? 4 : 3;
 
 	function nextStep() {
 		if (step === 2 && !hasConfigStep) {
@@ -77,32 +74,57 @@
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error('Not signed in');
 
-			const scoring = defaultScoringForType(type);
+			const scoring = defaultScoringForType(habit.type);
 			const activeDays = presetToDays(
 				schedulePreset,
 				schedulePreset === 'custom' ? customDays : undefined
 			);
 
-			await createHabit(supabase, user.id, {
+			await updateHabit(supabase, user.id, habit.id, {
 				name: name.trim(),
-				type,
 				active_days: activeDays,
 				allow_skip: allowSkip,
 				max_consecutive_skips: maxConsecutiveSkips,
 				anchor_time: isAnytime || !anchorTime ? null : `${anchorTime}:00`,
-				target_value: type === 'do_target' ? targetValue : null,
-				target_unit: type === 'do_target' ? targetUnit : null,
-				target_time: type === 'do_on_time' ? `${targetTime}:00` : null,
-				grace_minutes: type === 'do_on_time' ? graceMinutes : scoring.grace_minutes,
+				target_value: habit.type === 'do_target' ? targetValue : null,
+				target_unit: habit.type === 'do_target' ? targetUnit : null,
+				target_time: habit.type === 'do_on_time' ? `${targetTime}:00` : null,
+				grace_minutes: habit.type === 'do_on_time' ? graceMinutes : scoring.grace_minutes,
 				falloff_minutes_per_10_percent:
-					type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent
+					habit.type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent
 			});
 
-			await goto('/next');
+			await goto('/today');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Could not create habit';
+			error = err instanceof Error ? err.message : 'Could not update habit';
 		} finally {
 			saving = false;
+		}
+	}
+
+	async function deleteHabit() {
+		if (
+			!confirm(`Delete "${name.trim()}"? Past logs are kept, but the habit won't appear again.`)
+		) {
+			return;
+		}
+
+		deleting = true;
+		error = '';
+
+		try {
+			const supabase = createClient();
+			const {
+				data: { user }
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error('Not signed in');
+
+			await archiveHabit(supabase, user.id, habit.id);
+			await goto('/today');
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Could not delete habit';
+		} finally {
+			deleting = false;
 		}
 	}
 
@@ -111,17 +133,19 @@
 </script>
 
 <svelte:head>
-	<title>New habit · Looplog</title>
+	<title>Edit {habit.name} · Looplog</title>
 </svelte:head>
 
 <section class="grid gap-4">
 	<header>
-		<a href="/next" class="inline-flex items-center gap-1 text-blue no-underline">
+		<a href="/today" class="inline-flex items-center gap-1 text-blue no-underline">
 			<Icon path={mdiChevronLeft} size={20} />
 			Back
 		</a>
-		<h1 class="mt-2 mb-0.5 text-2xl font-bold">New habit</h1>
-		<p class="m-0 text-subtext-0">Step {displayStep} of {totalSteps}</p>
+		<h1 class="mt-2 mb-0.5 text-2xl font-bold">Edit habit</h1>
+		<p class="m-0 text-subtext-0">
+			Step {step === 4 && !hasConfigStep ? 3 : step} of {totalSteps} · {habitTypeLabel(habit.type)}
+		</p>
 	</header>
 
 	{#if step === 1}
@@ -130,20 +154,9 @@
 			<input id="name" bind:value={name} placeholder="Morning ride" required class={inputClass} />
 
 			<p class="text-sm text-subtext-1">Type</p>
-			<div class="grid gap-2">
-				{#each types as option (option.value)}
-					<button
-						type="button"
-						class="rounded-xl border px-3.5 py-3.5 text-left {type === option.value
-							? 'border-blue bg-blue/10'
-							: 'border-surface-0/50 bg-crust'}"
-						onclick={() => (type = option.value)}
-					>
-						<strong>{option.label}</strong>
-						<span class="mt-0.5 block text-sm text-subtext-0">{option.hint}</span>
-					</button>
-				{/each}
-			</div>
+			<p class="m-0 rounded-xl border border-surface-0/50 bg-crust px-3.5 py-3.5">
+				{habitTypeLabel(habit.type)}
+			</p>
 		</div>
 	{:else if step === 2}
 		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
@@ -204,7 +217,7 @@
 		</div>
 	{:else if step === 3}
 		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
-			{#if type === 'do_target'}
+			{#if habit.type === 'do_target'}
 				<label for="target-value" class="text-sm text-subtext-1">Target</label>
 				<input
 					id="target-value"
@@ -220,7 +233,7 @@
 					placeholder="min, pages, km"
 					class={inputClass}
 				/>
-			{:else if type === 'do_on_time'}
+			{:else if habit.type === 'do_on_time'}
 				<label for="target-time" class="text-sm text-subtext-1">Target time</label>
 				<input id="target-time" type="time" bind:value={targetTime} class={inputClass} />
 				<label for="grace" class="text-sm text-subtext-1">Grace window (minutes)</label>
@@ -229,7 +242,7 @@
 					>Minutes late for each 10% drop (after grace)</label
 				>
 				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} class={inputClass} />
-			{:else if type === 'do_binary'}
+			{:else if habit.type === 'do_binary'}
 				<p class="m-0 text-sm text-subtext-0">
 					Log Yes or No each day — 100% or 0% adherence.
 				</p>
@@ -281,10 +294,10 @@
 			<button
 				type="button"
 				class="flex-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
-				disabled={saving || !name.trim() || (!isAnytime && !anchorTime)}
+				disabled={saving || deleting || !name.trim() || (!isAnytime && !anchorTime)}
 				onclick={saveHabit}
 			>
-				{saving ? 'Saving…' : 'Create habit'}
+				{saving ? 'Saving…' : 'Save changes'}
 			</button>
 		{/if}
 	</div>
@@ -292,4 +305,16 @@
 	{#if error}
 		<p class="text-red">{error}</p>
 	{/if}
+
+	<div class="grid gap-2 border-t border-surface-0/50 pt-4">
+		<p class="m-0 text-sm text-subtext-1">Danger zone</p>
+		<button
+			type="button"
+			class="rounded-xl border border-red/40 bg-red/10 py-3.5 font-semibold text-red disabled:opacity-60"
+			disabled={saving || deleting}
+			onclick={deleteHabit}
+		>
+			{deleting ? 'Deleting…' : 'Delete habit'}
+		</button>
+	</div>
 </section>

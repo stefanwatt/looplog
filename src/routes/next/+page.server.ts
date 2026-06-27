@@ -1,5 +1,5 @@
 import { canSkipToday } from '$lib/habits/adherence';
-import { listRecentLogs } from '$lib/habits/service';
+import { listRecentLogs, orderedPendingTimedHabits } from '$lib/habits/service';
 import { loadDayContext } from '$lib/server/day';
 import type { PageServerLoad } from './$types';
 
@@ -8,6 +8,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	if (!user) {
 		return {
 			nextHabit: null,
+			upcomingHabits: [],
 			canSkip: false,
 			timezone: 'UTC',
 			dateKey: '',
@@ -18,6 +19,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
 	const day = await loadDayContext(supabase, user.id);
 	const timed = day.timedHabits;
+	const upcomingHabits = orderedPendingTimedHabits(timed, new Date(), day.timezone).slice(0, 3);
 	const doneCount = timed.filter((habit) => habit.log).length;
 
 	let canSkip = false;
@@ -28,6 +30,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
 	return {
 		nextHabit: day.nextHabit,
+		upcomingHabits,
 		canSkip,
 		timezone: day.timezone,
 		dateKey: day.dateKey,

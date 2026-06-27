@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
+	import HabitCardStack from '$lib/components/HabitCardStack.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { upsertLog } from '$lib/habits/service';
 	import { createClient } from '$lib/supabase/client';
+	import { mdiPlus } from '@mdi/js';
 
 	let { data } = $props();
 
@@ -70,10 +72,10 @@
 		</p>
 	</header>
 
-	{#if data.nextHabit}
-		{#key data.nextHabit.id}
-			<SwipeHabitCard
-				habit={data.nextHabit}
+	{#if data.upcomingHabits.length > 0}
+		{#key data.upcomingHabits[0].id}
+			<HabitCardStack
+				habits={data.upcomingHabits}
 				timezone={data.timezone}
 				canSkip={data.canSkip}
 				{busy}
@@ -96,4 +98,12 @@
 	{#if error}
 		<p class="mt-4 text-red">{error}</p>
 	{/if}
+
+	<a
+		class="fixed right-4 bottom-[5.5rem] grid size-[3.25rem] place-items-center rounded-full bg-blue no-underline shadow-lg shadow-blue/35"
+		href="/habits/new"
+		aria-label="Create habit"
+	>
+		<Icon class="text-white" path={mdiPlus} size={28} />
+	</a>
 </section>

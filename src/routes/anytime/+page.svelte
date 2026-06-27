@@ -5,7 +5,7 @@
 	import { upsertLog } from '$lib/habits/service';
 	import { createClient } from '$lib/supabase/client';
 	import type { HabitWithLog } from '$lib/database.types';
-	import { mdiPlus } from '@mdi/js';
+	import { mdiPlus, mdiPencil } from '@mdi/js';
 
 	type AnytimeHabit = HabitWithLog & { canSkip: boolean };
 
@@ -83,14 +83,23 @@
 			{#each data.anytimeHabits as habit (habit.id)}
 				{#if habit.log}
 					<div
-						class="flex items-center justify-between rounded-2xl bg-surface-0/40 px-4 py-4 text-green"
+						class="flex items-center justify-between gap-3 rounded-2xl bg-surface-0/40 px-4 py-4 text-green"
 					>
-						<p class="m-0 text-text">{habit.name}</p>
-						<span
-							>{habit.log.status === 'skipped'
-								? 'Skipped'
-								: `${habit.log.adherence_score}%`}</span
-						>
+						<p class="m-0 min-w-0 text-text">{habit.name}</p>
+						<div class="flex shrink-0 items-center gap-3">
+							<span
+								>{habit.log.status === 'skipped'
+									? 'Skipped'
+									: `${habit.log.adherence_score}%`}</span
+							>
+							<a
+								href="/habits/{habit.id}/edit"
+								class="grid place-items-center text-subtext-0 no-underline"
+								aria-label="Edit {habit.name}"
+							>
+								<Icon path={mdiPencil} size={18} />
+							</a>
+						</div>
 					</div>
 				{:else}
 					{#key habit.id}
