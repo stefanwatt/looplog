@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { HabitType } from '$lib/database.types';
 	import { DEFAULT_MAX_SKIPS, defaultScoringForType } from '$lib/habits/defaults';
 	import { presetToDays, type SchedulePreset, weekdayLabel, ALL_DAYS } from '$lib/habits/schedule';
 	import { createHabit } from '$lib/habits/service';
 	import { createClient } from '$lib/supabase/client';
+	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 
 	const types: { value: HabitType; label: string; hint: string }[] = [
 		{ value: 'do_target', label: 'Do (target)', hint: 'Track amount vs a target' },
@@ -86,127 +88,178 @@
 			saving = false;
 		}
 	}
+
+	const inputClass =
+		'w-full rounded-xl border border-surface-0 bg-crust px-3.5 py-3 text-text';
 </script>
 
 <svelte:head>
 	<title>New habit · Looplog</title>
 </svelte:head>
 
-<section class="wizard">
+<section class="grid gap-4">
 	<header>
-		<a href="/next">← Back</a>
-		<h1>New habit</h1>
-		<p>Step {step} of 4</p>
+		<a href="/next" class="inline-flex items-center gap-1 text-blue no-underline">
+			<Icon path={mdiChevronLeft} size={20} />
+			Back
+		</a>
+		<h1 class="mt-2 mb-0.5 text-2xl font-bold">New habit</h1>
+		<p class="m-0 text-subtext-0">Step {step} of 4</p>
 	</header>
 
 	{#if step === 1}
-		<div class="panel">
-			<label for="name">Name</label>
-			<input id="name" bind:value={name} placeholder="Morning ride" required />
+		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
+			<label for="name" class="text-sm text-subtext-1">Name</label>
+			<input id="name" bind:value={name} placeholder="Morning ride" required class={inputClass} />
 
-			<p class="label">Type</p>
-			<div class="choices">
-				{#each types as option}
+			<p class="text-sm text-subtext-1">Type</p>
+			<div class="grid gap-2">
+				{#each types as option (option.value)}
 					<button
 						type="button"
-						class="choice"
-						class:choice--active={type === option.value}
+						class="rounded-xl border px-3.5 py-3.5 text-left {type === option.value
+							? 'border-blue bg-blue/10'
+							: 'border-surface-0/50 bg-crust'}"
 						onclick={() => (type = option.value)}
 					>
 						<strong>{option.label}</strong>
-						<span>{option.hint}</span>
+						<span class="mt-0.5 block text-sm text-subtext-0">{option.hint}</span>
 					</button>
 				{/each}
 			</div>
 		</div>
 	{:else if step === 2}
-		<div class="panel">
-			<p class="label">Schedule</p>
-			<div class="segmented">
+		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
+			<p class="text-sm text-subtext-1">Schedule</p>
+			<div class="flex flex-wrap gap-2">
 				<button
 					type="button"
-					class:active={schedulePreset === 'daily'}
+					class="rounded-full border px-3 py-1.5 {schedulePreset === 'daily'
+						? 'border-blue bg-blue/15 text-blue'
+						: 'border-surface-0 bg-transparent'}"
 					onclick={() => (schedulePreset = 'daily')}>Daily</button
 				>
 				<button
 					type="button"
-					class:active={schedulePreset === 'weekdays'}
+					class="rounded-full border px-3 py-1.5 {schedulePreset === 'weekdays'
+						? 'border-blue bg-blue/15 text-blue'
+						: 'border-surface-0 bg-transparent'}"
 					onclick={() => (schedulePreset = 'weekdays')}>Weekdays</button
 				>
 				<button
 					type="button"
-					class:active={schedulePreset === 'custom'}
+					class="rounded-full border px-3 py-1.5 {schedulePreset === 'custom'
+						? 'border-blue bg-blue/15 text-blue'
+						: 'border-surface-0 bg-transparent'}"
 					onclick={() => (schedulePreset = 'custom')}>Custom</button
 				>
 			</div>
 
 			{#if schedulePreset === 'custom'}
-				<div class="days">
-					{#each ALL_DAYS as day}
+				<div class="flex flex-wrap gap-2">
+					{#each ALL_DAYS as day (day)}
 						<button
 							type="button"
-							class:active={customDays.includes(day)}
+							class="rounded-full border px-3 py-1.5 {customDays.includes(day)
+								? 'border-blue bg-blue/15 text-blue'
+								: 'border-surface-0 bg-transparent'}"
 							onclick={() => toggleDay(day)}>{weekdayLabel(day)}</button
 						>
 					{/each}
 				</div>
 			{/if}
 
-			<label class="checkbox">
+			<label class="flex items-center gap-2">
 				<input type="checkbox" bind:checked={allowSkip} />
 				Allow skip without penalty
 			</label>
 
 			{#if allowSkip}
-				<label for="max-skips">Max consecutive skips</label>
-				<input id="max-skips" type="number" min="1" bind:value={maxConsecutiveSkips} />
+				<label for="max-skips" class="text-sm text-subtext-1">Max consecutive skips</label>
+				<input
+					id="max-skips"
+					type="number"
+					min="1"
+					bind:value={maxConsecutiveSkips}
+					class={inputClass}
+				/>
 			{/if}
 		</div>
 	{:else if step === 3}
-		<div class="panel">
+		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
 			{#if type === 'do_target'}
-				<label for="target-value">Target</label>
-				<input id="target-value" type="number" min="1" bind:value={targetValue} />
-				<label for="target-unit">Unit</label>
-				<input id="target-unit" bind:value={targetUnit} placeholder="min, pages, km" />
+				<label for="target-value" class="text-sm text-subtext-1">Target</label>
+				<input
+					id="target-value"
+					type="number"
+					min="1"
+					bind:value={targetValue}
+					class={inputClass}
+				/>
+				<label for="target-unit" class="text-sm text-subtext-1">Unit</label>
+				<input
+					id="target-unit"
+					bind:value={targetUnit}
+					placeholder="min, pages, km"
+					class={inputClass}
+				/>
 			{:else if type === 'do_on_time'}
-				<label for="target-time">Target time</label>
-				<input id="target-time" type="time" bind:value={targetTime} />
-				<label for="grace">Grace window (minutes)</label>
-				<input id="grace" type="number" min="0" bind:value={graceMinutes} />
-				<label for="falloff">Minutes late for each 10% drop (after grace)</label>
-				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} />
+				<label for="target-time" class="text-sm text-subtext-1">Target time</label>
+				<input id="target-time" type="time" bind:value={targetTime} class={inputClass} />
+				<label for="grace" class="text-sm text-subtext-1">Grace window (minutes)</label>
+				<input id="grace" type="number" min="0" bind:value={graceMinutes} class={inputClass} />
+				<label for="falloff" class="text-sm text-subtext-1"
+					>Minutes late for each 10% drop (after grace)</label
+				>
+				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} class={inputClass} />
 			{:else}
-				<p class="hint">Adherence comes from your 1–5 satisfaction rating when you log.</p>
+				<p class="m-0 text-sm text-subtext-0">
+					Adherence comes from your 1–5 satisfaction rating when you log.
+				</p>
 			{/if}
 		</div>
 	{:else}
-		<div class="panel">
-			<label class="checkbox">
+		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
+			<label class="flex items-center gap-2">
 				<input type="checkbox" bind:checked={isAnytime} />
 				Anytime habit (no anchor time)
 			</label>
 
 			{#if !isAnytime}
-				<label for="anchor">Anchor time</label>
-				<input id="anchor" type="time" bind:value={anchorTime} required />
-				<p class="hint">Used for ordering in Next — not a deadline.</p>
+				<label for="anchor" class="text-sm text-subtext-1">Anchor time</label>
+				<input id="anchor" type="time" bind:value={anchorTime} required class={inputClass} />
+				<p class="m-0 text-sm text-subtext-0">
+					Used for ordering in Next — not a deadline.
+				</p>
 			{/if}
 		</div>
 	{/if}
 
-	<div class="actions">
+	<div class="flex gap-3">
 		{#if step > 1}
-			<button type="button" class="secondary" onclick={prevStep}>Back</button>
+			<button
+				type="button"
+				class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-0 bg-surface-0/50 py-3.5 font-semibold"
+				onclick={prevStep}
+			>
+				<Icon path={mdiChevronLeft} size={20} />
+				Back
+			</button>
 		{/if}
 		{#if step < 4}
-			<button type="button" class="primary" disabled={step === 1 && !name.trim()} onclick={nextStep}>
+			<button
+				type="button"
+				class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
+				disabled={step === 1 && !name.trim()}
+				onclick={nextStep}
+			>
 				Continue
+				<Icon path={mdiChevronRight} size={20} />
 			</button>
 		{:else}
 			<button
 				type="button"
-				class="primary"
+				class="flex-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-60"
 				disabled={saving || !name.trim() || (!isAnytime && !anchorTime)}
 				onclick={saveHabit}
 			>
@@ -216,141 +269,6 @@
 	</div>
 
 	{#if error}
-		<p class="error">{error}</p>
+		<p class="text-red">{error}</p>
 	{/if}
 </section>
-
-<style>
-	.wizard {
-		display: grid;
-		gap: 1rem;
-	}
-
-	header a {
-		color: #7dd3fc;
-		text-decoration: none;
-	}
-
-	header h1 {
-		margin: 0.5rem 0 0.15rem;
-	}
-
-	header p {
-		margin: 0;
-		color: #8b98a8;
-	}
-
-	.panel {
-		display: grid;
-		gap: 0.75rem;
-		padding: 1rem;
-		border-radius: 1rem;
-		background: #121821;
-	}
-
-	label,
-	.label {
-		font-size: 0.85rem;
-		color: #b8c2cf;
-	}
-
-	input[type='text'],
-	input[type='number'],
-	input[type='time'] {
-		width: 100%;
-		border-radius: 0.75rem;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: #0b0f14;
-		color: inherit;
-		padding: 0.75rem 0.85rem;
-	}
-
-	.choices {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.choice {
-		text-align: left;
-		border-radius: 0.85rem;
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		background: #0b0f14;
-		color: inherit;
-		padding: 0.85rem;
-	}
-
-	.choice--active {
-		border-color: #0284c7;
-		background: rgba(2, 132, 199, 0.12);
-	}
-
-	.choice span {
-		display: block;
-		margin-top: 0.2rem;
-		color: #8b98a8;
-		font-size: 0.85rem;
-	}
-
-	.segmented,
-	.days {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-
-	.segmented button,
-	.days button {
-		border-radius: 999px;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: transparent;
-		color: inherit;
-		padding: 0.45rem 0.8rem;
-	}
-
-	.segmented button.active,
-	.days button.active {
-		background: rgba(2, 132, 199, 0.18);
-		border-color: #0284c7;
-		color: #7dd3fc;
-	}
-
-	.checkbox {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.hint {
-		margin: 0;
-		color: #8b98a8;
-		font-size: 0.9rem;
-	}
-
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.primary,
-	.secondary {
-		flex: 1;
-		border-radius: 0.85rem;
-		padding: 0.85rem 1rem;
-		font-weight: 600;
-		border: 0;
-	}
-
-	.primary {
-		background: #0284c7;
-		color: white;
-	}
-
-	.secondary {
-		background: rgba(255, 255, 255, 0.08);
-		color: inherit;
-	}
-
-	.error {
-		color: #fca5a5;
-	}
-</style>

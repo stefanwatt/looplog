@@ -56,17 +56,18 @@
 			busy = false;
 		}
 	}
-
 </script>
 
 <svelte:head>
 	<title>Next · Looplog</title>
 </svelte:head>
 
-<section class="page">
-	<header class="page__header">
-		<h1>Next</h1>
-		<p>{data.doneCount} / {data.timedCount} timed habits done</p>
+<section>
+	<header>
+		<h1 class="m-0 text-2xl font-bold">Next</h1>
+		<p class="mt-1 mb-4 text-subtext-0">
+			{data.doneCount} / {data.timedCount} timed habits done
+		</p>
 	</header>
 
 	{#if data.nextHabit}
@@ -81,46 +82,18 @@
 			/>
 		{/key}
 	{:else if data.timedCount === 0}
-		<div class="empty">
-			<p>No timed habits for today.</p>
-			<a href="/habits/new">Create a habit</a>
+		<div class="rounded-2xl bg-surface-0/40 px-4 py-8 text-center">
+			<p class="m-0">No timed habits for today.</p>
+			<a href="/habits/new" class="text-blue">Create a habit</a>
 		</div>
 	{:else}
-		<div class="empty">
-			<p>All timed habits are done for today.</p>
-			<a href="/anytime">Check anytime habits</a>
+		<div class="rounded-2xl bg-surface-0/40 px-4 py-8 text-center">
+			<p class="m-0">All timed habits are done for today.</p>
+			<a href="/anytime" class="text-blue">Check anytime habits</a>
 		</div>
 	{/if}
 
 	{#if error}
-		<p class="error">{error}</p>
+		<p class="mt-4 text-red">{error}</p>
 	{/if}
 </section>
-
-<style>
-	.page__header h1 {
-		margin: 0;
-		font-size: 1.5rem;
-	}
-
-	.page__header p {
-		margin: 0.25rem 0 1rem;
-		color: #8b98a8;
-	}
-
-	.empty {
-		padding: 2rem 1rem;
-		text-align: center;
-		border-radius: 1rem;
-		background: #121821;
-	}
-
-	.empty a {
-		color: #7dd3fc;
-	}
-
-	.error {
-		color: #fca5a5;
-		margin-top: 1rem;
-	}
-</style>

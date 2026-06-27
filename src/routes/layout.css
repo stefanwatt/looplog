@@ -1,26 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+/* Catppuccin Latte (light) */
 :root {
-	color-scheme: dark;
-	font-family:
-		'Inter',
-		system-ui,
-		-apple-system,
-		BlinkMacSystemFont,
-		'Segoe UI',
-		sans-serif;
+	color-scheme: light dark;
+
+	--ctp-rosewater: #dc8a78;
+	--ctp-flamingo: #dd7878;
+	--ctp-pink: #ea76cb;
+	--ctp-mauve: #8839ef;
+	--ctp-red: #d20f39;
+	--ctp-maroon: #e64553;
+	--ctp-peach: #fe640b;
+	--ctp-yellow: #df8e1d;
+	--ctp-green: #40a02b;
+	--ctp-teal: #179299;
+	--ctp-sky: #04a5e5;
+	--ctp-sapphire: #209fb5;
+	--ctp-blue: #1e66f5;
+	--ctp-lavender: #7287fd;
+	--ctp-text: #4c4f69;
+	--ctp-subtext-1: #5c5f77;
+	--ctp-subtext-0: #6c6f85;
+	--ctp-overlay-2: #7c7f93;
+	--ctp-overlay-1: #8c8fa1;
+	--ctp-overlay-0: #9ca0b0;
+	--ctp-surface-2: #acb0be;
+	--ctp-surface-1: #bcc0cc;
+	--ctp-surface-0: #ccd0da;
+	--ctp-base: #eff1f5;
+	--ctp-mantle: #e6e9ef;
+	--ctp-crust: #dce0e8;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--ctp-rosewater: #f5e0dc;
+		--ctp-flamingo: #f2cdcd;
+		--ctp-pink: #f5c2e7;
+		--ctp-mauve: #cba6f7;
+		--ctp-red: #f38ba8;
+		--ctp-maroon: #eba0ac;
+		--ctp-peach: #fab387;
+		--ctp-yellow: #f9e2af;
+		--ctp-green: #a6e3a1;
+		--ctp-teal: #94e2d5;
+		--ctp-sky: #89dceb;
+		--ctp-sapphire: #74c7ec;
+		--ctp-blue: #89b4fa;
+		--ctp-lavender: #b4befe;
+		--ctp-text: #cdd6f4;
+		--ctp-subtext-1: #bac2de;
+		--ctp-subtext-0: #a6adc8;
+		--ctp-overlay-2: #9399b2;
+		--ctp-overlay-1: #7f849c;
+		--ctp-overlay-0: #6c7086;
+		--ctp-surface-2: #585b70;
+		--ctp-surface-1: #45475a;
+		--ctp-surface-0: #313244;
+		--ctp-base: #1e1e2e;
+		--ctp-mantle: #181825;
+		--ctp-crust: #11111b;
+	}
+}
+
+@theme {
+	--font-sans:
+		'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+	--color-rosewater: var(--ctp-rosewater);
+	--color-flamingo: var(--ctp-flamingo);
+	--color-pink: var(--ctp-pink);
+	--color-mauve: var(--ctp-mauve);
+	--color-red: var(--ctp-red);
+	--color-maroon: var(--ctp-maroon);
+	--color-peach: var(--ctp-peach);
+	--color-yellow: var(--ctp-yellow);
+	--color-green: var(--ctp-green);
+	--color-teal: var(--ctp-teal);
+	--color-sky: var(--ctp-sky);
+	--color-sapphire: var(--ctp-sapphire);
+	--color-blue: var(--ctp-blue);
+	--color-lavender: var(--ctp-lavender);
+	--color-text: var(--ctp-text);
+	--color-subtext-1: var(--ctp-subtext-1);
+	--color-subtext-0: var(--ctp-subtext-0);
+	--color-overlay-2: var(--ctp-overlay-2);
+	--color-overlay-1: var(--ctp-overlay-1);
+	--color-overlay-0: var(--ctp-overlay-0);
+	--color-surface-2: var(--ctp-surface-2);
+	--color-surface-1: var(--ctp-surface-1);
+	--color-surface-0: var(--ctp-surface-0);
+	--color-base: var(--ctp-base);
+	--color-mantle: var(--ctp-mantle);
+	--color-crust: var(--ctp-crust);
 }
 
 * {
 	box-sizing: border-box;
 }
 
+html,
 body {
 	margin: 0;
-	background: #0b0f14;
-	color: #e8edf2;
+	min-height: 100%;
+	font-family: var(--font-sans);
+	background: var(--ctp-base);
+	color: var(--ctp-text);
 }
 
 button,

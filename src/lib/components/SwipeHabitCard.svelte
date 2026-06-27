@@ -7,7 +7,9 @@
 		nailedItInput,
 		previewAdherenceLabel
 	} from '$lib/habits/adherence';
+	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
+	import { mdiCheck, mdiClose, mdiSkipNext } from '@mdi/js';
 
 	let {
 		habit,
@@ -25,11 +27,16 @@
 		busy?: boolean;
 	} = $props();
 
-	const defaults = nailedItInput(habit, timezone);
+	let actualValue = $state(0);
+	let actualTime = $state('12:00');
+	let satisfaction = $state(3);
 
-	let actualValue = $state(defaults.actualValue ?? 0);
-	let actualTime = $state((defaults.actualTime ?? '12:00').slice(0, 5));
-	let satisfaction = $state(defaults.satisfaction ?? 3);
+	$effect(() => {
+		const input = nailedItInput(habit, timezone);
+		actualValue = input.actualValue ?? 0;
+		actualTime = (input.actualTime ?? '12:00').slice(0, 5);
+		satisfaction = input.satisfaction ?? 3;
+	});
 
 	let dragX = $state(0);
 	let dragging = $state(false);
@@ -104,7 +111,7 @@
 </script>
 
 <div
-	class="card"
+	class="select-none rounded-2xl border border-surface-0/50 bg-linear-to-b from-surface-1 to-surface-0/40 p-5 shadow-xl shadow-crust/50 transition-transform duration-150"
 	role="group"
 	aria-label="{habit.name} logging card"
 	style:transform
@@ -114,14 +121,14 @@
 	onpointerup={onPointerUp}
 	onpointercancel={onPointerUp}
 >
-	<div class="card__header">
-		<p class="card__time">{formatTimeLabel(habit.anchor_time)}</p>
-		<h2 class="card__title">{habit.name}</h2>
+	<div class="mb-5">
+		<p class="m-0 text-sm font-semibold text-blue">{formatTimeLabel(habit.anchor_time)}</p>
+		<h2 class="mt-1.5 mb-0 text-2xl font-bold">{habit.name}</h2>
 	</div>
 
-	<div class="card__body">
+	<div class="mb-4 grid gap-3">
 		{#if habit.type === 'do_target'}
-			<label class="card__label" for="value-{habit.id}">
+			<label class="m-0 text-subtext-1" for="value-{habit.id}">
 				{actualValue} / {habit.target_value} {habit.target_unit}
 			</label>
 			<input
@@ -132,140 +139,73 @@
 				step="1"
 				bind:value={actualValue}
 				disabled={busy}
+				class="w-full accent-blue"
 			/>
 		{:else if habit.type === 'do_on_time'}
-			<label class="card__label" for="time-{habit.id}">Actual time</label>
-			<input id="time-{habit.id}" type="time" bind:value={actualTime} disabled={busy} />
-			<p class="card__hint">Target {formatTimeLabel(habit.target_time)}</p>
+			<label class="m-0 text-subtext-1" for="time-{habit.id}">Actual time</label>
+			<input
+				id="time-{habit.id}"
+				type="time"
+				bind:value={actualTime}
+				disabled={busy}
+				class="w-full rounded-xl border border-surface-0 bg-crust px-3 py-2"
+			/>
+			<p class="m-0 text-subtext-1">Target {formatTimeLabel(habit.target_time)}</p>
 		{:else}
-			<p class="card__label">How did you do?</p>
+			<p class="m-0 text-subtext-1">How did you do?</p>
 			<StarRating bind:value={satisfaction} disabled={busy} />
 		{/if}
 	</div>
 
-	<div class="card__preview">
-		<span class="card__score">{previewScore}%</span>
-		<span class="card__label-text">{previewAdherenceLabel(previewScore)}</span>
+	<div class="mb-4 flex items-baseline gap-2">
+		<span class="text-3xl font-bold">{previewScore}%</span>
+		<span class="text-subtext-0">{previewAdherenceLabel(previewScore)}</span>
 	</div>
 
-	<div class="card__actions">
+	<div class="grid gap-2">
 		{#if habit.type === 'do_target' || habit.type === 'do_on_time'}
-			<button type="button" class="card__secondary" disabled={busy} onclick={nailedIt}>
+			<button
+				type="button"
+				class="inline-flex items-center justify-center gap-2 rounded-xl border-0 bg-blue/15 py-3.5 font-semibold text-blue disabled:opacity-50"
+				disabled={busy}
+				onclick={nailedIt}
+			>
+				<Icon path={mdiCheck} size={20} />
 				Nailed it
 			</button>
 		{/if}
-		<button type="button" class="card__primary" disabled={busy || !canSubmit} onclick={submit}>
+		<button
+			type="button"
+			class="inline-flex items-center justify-center gap-2 rounded-xl border-0 bg-blue py-3.5 font-semibold text-crust disabled:opacity-50"
+			disabled={busy || !canSubmit}
+			onclick={submit}
+		>
+			<Icon path={mdiCheck} size={20} />
 			Log
 		</button>
 		{#if canSkip}
-			<button type="button" class="card__ghost" disabled={busy} onclick={() => onskip?.()}>
+			<button
+				type="button"
+				class="inline-flex items-center justify-center gap-2 rounded-xl border-0 bg-transparent py-3.5 font-semibold text-overlay-0 disabled:opacity-50"
+				disabled={busy}
+				onclick={() => onskip?.()}
+			>
+				<Icon path={mdiSkipNext} size={20} />
 				Skip
 			</button>
 		{/if}
 	</div>
 
-	<p class="card__gestures">Swipe right to log · swipe left to skip</p>
+	<p class="mt-4 mb-0 flex items-center justify-center gap-3 text-center text-xs text-overlay-0">
+		<span class="inline-flex items-center gap-1 text-green">
+			<Icon path={mdiCheck} size={14} />
+			swipe right to log
+		</span>
+		{#if canSkip}
+			<span class="inline-flex items-center gap-1 text-red">
+				<Icon path={mdiClose} size={14} />
+				swipe left to skip
+			</span>
+		{/if}
+	</p>
 </div>
-
-<style>
-	.card {
-		border-radius: 1.25rem;
-		padding: 1.25rem;
-		background: linear-gradient(180deg, #172033 0%, #121821 100%);
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-		transition: transform 0.15s ease;
-		user-select: none;
-	}
-
-	.card__header {
-		margin-bottom: 1.25rem;
-	}
-
-	.card__time {
-		margin: 0;
-		font-size: 0.85rem;
-		color: #7dd3fc;
-		font-weight: 600;
-	}
-
-	.card__title {
-		margin: 0.35rem 0 0;
-		font-size: 1.6rem;
-	}
-
-	.card__body {
-		display: grid;
-		gap: 0.75rem;
-		margin-bottom: 1rem;
-	}
-
-	.card__label,
-	.card__hint {
-		margin: 0;
-		color: #b8c2cf;
-	}
-
-	.card__preview {
-		display: flex;
-		align-items: baseline;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	.card__score {
-		font-size: 2rem;
-		font-weight: 700;
-	}
-
-	.card__label-text {
-		color: #8b98a8;
-	}
-
-	.card__actions {
-		display: grid;
-		gap: 0.5rem;
-	}
-
-	.card__primary,
-	.card__secondary,
-	.card__ghost {
-		border-radius: 0.85rem;
-		padding: 0.85rem 1rem;
-		font-weight: 600;
-		border: 0;
-	}
-
-	.card__primary {
-		background: #0284c7;
-		color: white;
-	}
-
-	.card__secondary {
-		background: rgba(125, 211, 252, 0.12);
-		color: #7dd3fc;
-	}
-
-	.card__ghost {
-		background: transparent;
-		color: #94a3b8;
-	}
-
-	.card__primary:disabled,
-	.card__secondary:disabled,
-	.card__ghost:disabled {
-		opacity: 0.5;
-	}
-
-	.card__gestures {
-		margin: 1rem 0 0;
-		text-align: center;
-		font-size: 0.75rem;
-		color: #64748b;
-	}
-
-	input[type='range'],
-	input[type='time'] {
-		width: 100%;
-	}
-</style>
