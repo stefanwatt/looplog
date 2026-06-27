@@ -6,14 +6,18 @@
 	import CreateHabitButton from '$lib/components/CreateHabitButton.svelte';
 	import DayTab from '$lib/components/tabs/DayTab.svelte';
 	import FocusTab from '$lib/components/tabs/FocusTab.svelte';
+	import StatsTab from '$lib/components/tabs/StatsTab.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { startDayRealtime, stopDayRealtime } from '$lib/habits/day-realtime';
 	import { getDayStore } from '$lib/habits/day.svelte';
-	import { mdiCalendarToday, mdiPlayCircle } from '@mdi/js';
+	import { getStatsStore } from '$lib/habits/stats.svelte';
+	import { onNavigate } from '$app/navigation';
+	import { mdiCalendarToday, mdiChartLine, mdiPlayCircle } from '@mdi/js';
 
 	const tabs = [
 		{ href: '/focus', label: 'Focus', icon: mdiPlayCircle },
-		{ href: '/day', label: 'Day', icon: mdiCalendarToday }
+		{ href: '/day', label: 'Day', icon: mdiCalendarToday },
+		{ href: '/stats', label: 'Stats', icon: mdiChartLine }
 	] as const;
 
 	const tabPaths = new Set<string>(tabs.map((tab) => tab.href));
@@ -22,7 +26,9 @@
 
 	const showNav = $derived(!page.url.pathname.startsWith('/auth'));
 	const isTabRoute = $derived(tabPaths.has(page.url.pathname));
+	const isStatsDetailRoute = $derived(page.url.pathname.startsWith('/stats/'));
 	const day = getDayStore();
+	const stats = getStatsStore();
 
 	if (data.user && data.day) {
 		if (!day.ready) {
@@ -30,7 +36,14 @@
 		}
 	} else if (day.ready) {
 		day.reset();
+		stats.reset();
 	}
+
+	$effect(() => {
+		const userId = data.user?.id;
+		if (!userId || !page.url.pathname.startsWith('/stats')) return;
+		void stats.load(userId);
+	});
 
 	$effect(() => {
 		if (!browser) return;
@@ -41,6 +54,21 @@
 		}
 
 		startDayRealtime(data.user.id);
+	});
+
+	onNavigate((navigation) => {
+		if (!browser || !document.startViewTransition) return;
+
+		const fromStats = navigation.from?.url.pathname.startsWith('/stats') ?? false;
+		const toStats = navigation.to?.url.pathname.startsWith('/stats') ?? false;
+		if (!fromStats && !toStats) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
 	});
 
 	function navigateTab(href: (typeof tabs)[number]['href'], event: MouseEvent) {
@@ -71,6 +99,11 @@
 			<div class:hidden={page.url.pathname !== '/day'}>
 				<DayTab />
 			</div>
+			<div class:hidden={page.url.pathname !== '/stats'}>
+				<StatsTab />
+			</div>
+		{:else if isStatsDetailRoute}
+			{@render children()}
 		{:else}
 			{@render children()}
 		{/if}
@@ -81,16 +114,17 @@
 			class="fixed right-0 bottom-0 left-0 flex items-center gap-2 border-t border-surface-0/50 bg-mantle/95 px-3 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] backdrop-blur-md"
 			aria-label="Main"
 		>
-			<div class="grid min-w-0 flex-1 grid-cols-2">
+			<div class="grid min-w-0 flex-1 grid-cols-3">
 				{#each tabs as tab (tab.href)}
 					<a
 						href={tab.href}
 						onclick={(event) => navigateTab(tab.href, event)}
-						class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname ===
-						tab.href
+						class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname.startsWith(
+							tab.href
+						)
 							? 'text-blue'
 							: 'text-subtext-0'}"
-						aria-current={page.url.pathname === tab.href ? 'page' : undefined}
+						aria-current={page.url.pathname.startsWith(tab.href) ? 'page' : undefined}
 					>
 						<Icon path={tab.icon} size={20} />
 						{tab.label}

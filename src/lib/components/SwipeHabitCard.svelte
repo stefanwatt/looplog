@@ -23,6 +23,8 @@
 	import {
 		CARD_ACTION_STAMPS,
 		CARD_SWIPE_ACTION_THRESHOLD_PX,
+		CARD_SWIPE_PREVIEW_START_PX,
+		swipePreviewOpacity,
 		type CardActionStampType
 	} from '$lib/habits/card-action-animation';
 	import { mdiPencil } from '@mdi/js';
@@ -164,6 +166,18 @@
 	const transform = $derived(`translateX(${dragX}px) rotate(${dragX * 0.04}deg)`);
 	const transformTransition = $derived(!dragging ? 'transform 200ms ease-out' : 'none');
 
+	const failurePreviewProgress = $derived(
+		interactive && dragging && !stamp && dragX < -CARD_SWIPE_PREVIEW_START_PX
+			? swipePreviewOpacity(dragX)
+			: 0
+	);
+
+	const successPreviewProgress = $derived(
+		interactive && dragging && !stamp && dragX > CARD_SWIPE_PREVIEW_START_PX
+			? swipePreviewOpacity(dragX)
+			: 0
+	);
+
 	function resetDrag() {
 		dragX = 0;
 		dragging = false;
@@ -224,6 +238,24 @@
 	onpointerup={interactive ? onPointerUp : undefined}
 	onpointercancel={interactive ? onPointerUp : undefined}
 >
+	{#if failurePreviewProgress > 0}
+		<CardActionStamp
+			label={CARD_ACTION_STAMPS.failure.label}
+			variant={CARD_ACTION_STAMPS.failure.variant}
+			mode="preview"
+			progress={failurePreviewProgress}
+			align="right"
+		/>
+	{/if}
+	{#if successPreviewProgress > 0}
+		<CardActionStamp
+			label={CARD_ACTION_STAMPS.success.label}
+			variant={CARD_ACTION_STAMPS.success.variant}
+			mode="preview"
+			progress={successPreviewProgress}
+			align="left"
+		/>
+	{/if}
 	{#if stamp}
 		<CardActionStamp
 			label={CARD_ACTION_STAMPS[stamp].label}

@@ -2,8 +2,20 @@ export type CardStampVariant = 'yellow' | 'green' | 'red';
 
 export const CARD_STAMP_HOLD_MS = 650;
 export const CARD_SWIPE_ACTION_THRESHOLD_PX = 160;
+export const CARD_SWIPE_PREVIEW_START_PX = 20;
 export const CARD_EXIT_SWIPE_PX = 420;
 export const CARD_EXIT_MS = 280;
+
+export function swipePreviewOpacity(dragX: number): number {
+	const distance = Math.abs(dragX);
+	if (distance <= CARD_SWIPE_PREVIEW_START_PX) return 0;
+
+	return Math.min(
+		(distance - CARD_SWIPE_PREVIEW_START_PX) /
+			(CARD_SWIPE_ACTION_THRESHOLD_PX - CARD_SWIPE_PREVIEW_START_PX),
+		1
+	);
+}
 
 export type CardActionStampType = 'nailed-it' | 'success' | 'failure';
 

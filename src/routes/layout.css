@@ -123,3 +123,15 @@ body {
 		color: inherit;
 	}
 }
+
+::view-transition-old(stats-page),
+::view-transition-new(stats-page) {
+	animation-duration: 0.28s;
+	animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(stats-metric-primary),
+::view-transition-new(stats-metric-primary) {
+	animation-duration: 0.32s;
+	animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
