@@ -51,6 +51,8 @@ export function calculateAdherence(
 			const drop = Math.ceil(penaltyMinutes / habit.falloff_minutes_per_10_percent) * 10;
 			return Math.max(0, 100 - drop);
 		}
+		case 'do_binary':
+			return input.actualValue === 1 ? 100 : 0;
 		case 'avoid':
 		case 'rate': {
 			const satisfaction = input.satisfaction ?? 1;
@@ -72,6 +74,8 @@ export function defaultInputForHabit(habit: Habit, timezone: string) {
 			return { actualValue: Number(habit.target_value ?? 0) };
 		case 'do_on_time':
 			return { actualTime: nowTimeString(new Date(), timezone) };
+		case 'do_binary':
+			return { actualValue: null };
 		case 'avoid':
 		case 'rate':
 			return { satisfaction: 5 };
@@ -79,6 +83,9 @@ export function defaultInputForHabit(habit: Habit, timezone: string) {
 }
 
 export function nailedItInput(habit: Habit, timezone: string) {
+	if (habit.type === 'do_binary') {
+		return { actualValue: 1 };
+	}
 	return defaultInputForHabit(habit, timezone);
 }
 
@@ -95,6 +102,8 @@ export function canSubmitLog(
 			return input.actualValue != null && input.actualValue >= 0;
 		case 'do_on_time':
 			return Boolean(input.actualTime);
+		case 'do_binary':
+			return input.actualValue === 0 || input.actualValue === 1;
 		case 'avoid':
 		case 'rate':
 			return input.satisfaction != null && input.satisfaction >= 1 && input.satisfaction <= 5;

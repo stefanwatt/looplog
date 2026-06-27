@@ -19,6 +19,11 @@ export function defaultScoringForType(type: HabitType) {
 				grace_minutes: DEFAULT_GRACE_MINUTES,
 				falloff_minutes_per_10_percent: DEFAULT_FALLOFF_MINUTES
 			};
+		case 'do_binary':
+			return {
+				grace_minutes: DEFAULT_GRACE_MINUTES,
+				falloff_minutes_per_10_percent: DEFAULT_FALLOFF_MINUTES
+			};
 		case 'avoid':
 		case 'rate':
 			return {

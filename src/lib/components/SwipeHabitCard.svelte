@@ -27,13 +27,14 @@
 		busy?: boolean;
 	} = $props();
 
-	let actualValue = $state(0);
+	let actualValue = $state<number | null>(null);
 	let actualTime = $state('12:00');
 	let satisfaction = $state(3);
 
 	$effect(() => {
 		const input = nailedItInput(habit, timezone);
-		actualValue = input.actualValue ?? 0;
+		actualValue =
+			habit.type === 'do_binary' ? null : (input.actualValue ?? 0);
 		actualTime = (input.actualTime ?? '12:00').slice(0, 5);
 		satisfaction = input.satisfaction ?? 3;
 	});
@@ -89,6 +90,7 @@
 	async function submit() {
 		switch (habit.type) {
 			case 'do_target':
+			case 'do_binary':
 				await onlog({ actualValue });
 				break;
 			case 'do_on_time':
@@ -141,6 +143,30 @@
 				disabled={busy}
 				class="w-full accent-blue"
 			/>
+		{:else if habit.type === 'do_binary'}
+			<p class="m-0 text-subtext-1">Did you do it?</p>
+			<div class="grid grid-cols-2 gap-2">
+				<button
+					type="button"
+					class="rounded-xl border px-4 py-3.5 font-semibold disabled:opacity-50 {actualValue === 1
+						? 'border-blue bg-blue/15 text-blue'
+						: 'border-surface-0 bg-crust text-text'}"
+					disabled={busy}
+					onclick={() => (actualValue = 1)}
+				>
+					Yes
+				</button>
+				<button
+					type="button"
+					class="rounded-xl border px-4 py-3.5 font-semibold disabled:opacity-50 {actualValue === 0
+						? 'border-red bg-red/15 text-red'
+						: 'border-surface-0 bg-crust text-text'}"
+					disabled={busy}
+					onclick={() => (actualValue = 0)}
+				>
+					No
+				</button>
+			</div>
 		{:else if habit.type === 'do_on_time'}
 			<label class="m-0 text-subtext-1" for="time-{habit.id}">Actual time</label>
 			<input
@@ -158,8 +184,12 @@
 	</div>
 
 	<div class="mb-4 flex items-baseline gap-2">
-		<span class="text-3xl font-bold">{previewScore}%</span>
-		<span class="text-subtext-0">{previewAdherenceLabel(previewScore)}</span>
+		{#if habit.type === 'do_binary' && actualValue == null}
+			<span class="text-subtext-0">Pick Yes or No</span>
+		{:else}
+			<span class="text-3xl font-bold">{previewScore}%</span>
+			<span class="text-subtext-0">{previewAdherenceLabel(previewScore)}</span>
+		{/if}
 	</div>
 
 	<div class="grid gap-2">
