@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
+	import HabitLogPanel from '$lib/components/HabitLogPanel.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { HabitWithLog } from '$lib/database.types';
 	import { logHabit, skipHabit, type HabitLogPayload } from '$lib/habits/log-actions';
@@ -57,7 +57,7 @@
 			<a href="/habits/new" class="text-blue">Create one</a>
 		</div>
 	{:else}
-		<div class="grid gap-4">
+		<div class="grid gap-6">
 			{#each data.anytimeHabits as habit (habit.id)}
 				{#if habit.log}
 					<div
@@ -81,7 +81,7 @@
 					</div>
 				{:else}
 					{#key habit.id}
-						<SwipeHabitCard
+						<HabitLogPanel
 							{habit}
 							timezone={data.timezone}
 							canSkip={habit.canSkip}

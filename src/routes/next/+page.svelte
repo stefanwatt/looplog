@@ -1,37 +1,39 @@
 <script lang="ts">
 	import HabitCardStack from '$lib/components/HabitCardStack.svelte';
+	import type { HabitWithLog } from '$lib/database.types';
 	import { logHabit, skipHabit, type HabitLogPayload } from '$lib/habits/log-actions';
 
 	let { data } = $props();
 
-	const currentHabit = $derived(data.upcomingHabits[0] ?? null);
-
 	let busy = $state(false);
 	let error = $state('');
+	let undoAvailable = $state(false);
 
-	async function handleLog(payload: HabitLogPayload) {
-		if (!currentHabit || busy) return;
+	async function handleLog(habit: HabitWithLog, payload: HabitLogPayload) {
+		if (busy) return;
 		busy = true;
 		error = '';
 
 		try {
-			await logHabit(currentHabit, data.dateKey, payload);
+			await logHabit(habit, data.dateKey, payload);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not save log';
+			throw err;
 		} finally {
 			busy = false;
 		}
 	}
 
-	async function handleSkip() {
-		if (!currentHabit || busy) return;
+	async function handleSkip(habit: HabitWithLog) {
+		if (busy) return;
 		busy = true;
 		error = '';
 
 		try {
-			await skipHabit(currentHabit, data.dateKey);
+			await skipHabit(habit, data.dateKey);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not skip habit';
+			throw err;
 		} finally {
 			busy = false;
 		}
@@ -50,19 +52,18 @@
 		</p>
 	</header>
 
-	{#if data.upcomingHabits.length > 0}
-		{#key data.upcomingHabits[0].id}
-			<div class="flex min-h-0 flex-1 flex-col">
-				<HabitCardStack
-					habits={data.upcomingHabits}
-					timezone={data.timezone}
-					canSkip={data.canSkip}
-					{busy}
-					onlog={handleLog}
-					onskip={handleSkip}
-				/>
-			</div>
-		{/key}
+	{#if data.upcomingHabits.length > 0 || undoAvailable}
+		<div class="flex min-h-0 flex-1 flex-col">
+			<HabitCardStack
+				habits={data.upcomingHabits}
+				timezone={data.timezone}
+				canSkip={data.canSkip}
+				bind:undoAvailable
+				{busy}
+				onlog={handleLog}
+				onskip={handleSkip}
+			/>
+		</div>
 	{:else if data.timedCount === 0}
 		<div class="rounded-2xl bg-surface-0/40 px-4 py-8 text-center">
 			<p class="m-0">No timed habits for today.</p>
