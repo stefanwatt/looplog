@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import type { HabitWithLog } from '$lib/database.types';
 	import type { HabitLogPayload } from '$lib/habits/log-actions';
 	import {
@@ -6,9 +7,16 @@
 		canNailIt,
 		checkPayload,
 		failPayload,
+		nailedItForm,
 		nailedItPayload,
 		type HabitCardForm
 	} from '$lib/habits/card-actions';
+	import {
+		CARD_EXIT_MS,
+		CARD_EXIT_SWIPE_PX,
+		CARD_STAMP_HOLD_MS,
+		wait
+	} from '$lib/habits/card-action-animation';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
 	import NextStackEmptyState from '$lib/components/NextStackEmptyState.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
@@ -48,6 +56,9 @@
 	let actualTime = $state('');
 	let satisfaction = $state<number | null>(null);
 	let touched = $state(false);
+	let animating = $state(false);
+	let stamp = $state<'nailed-it' | null>(null);
+	let formPreview = $state<HabitCardForm | null>(null);
 
 	const displayHabits = $derived.by(() => {
 		const restore = undoRestore;
@@ -80,6 +91,12 @@
 		undoAvailable = canUndo;
 	});
 
+	$effect(() => {
+		currentHabit?.id;
+		dragX = 0;
+		dragging = false;
+	});
+
 	const cardInitialForm = $derived(
 		undoRestore?.habit.id === currentHabit?.id ? undoRestore.form : null
 	);
@@ -108,7 +125,7 @@
 	}
 
 	function handleFail() {
-		if (!currentHabit || busy) return;
+		if (!currentHabit || busy || animating) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
@@ -120,7 +137,7 @@
 	}
 
 	function handleCheck() {
-		if (!currentHabit || busy || !canCheck) return;
+		if (!currentHabit || busy || animating || !canCheck) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
@@ -132,19 +149,48 @@
 	}
 
 	function handleNailedIt() {
-		if (!currentHabit || busy || !canNailItAction) return;
+		if (!currentHabit || busy || animating || !canNailItAction) return;
+		void runNailedItAnimation();
+	}
+
+	async function runNailedItAnimation() {
+		if (!currentHabit) return;
+
+		animating = true;
+		dragging = false;
+
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
+
+		formPreview = nailedItForm(currentHabit, timezone);
+		stamp = 'nailed-it';
+		await tick();
+
+		const holdMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : CARD_STAMP_HOLD_MS;
+		await wait(holdMs);
+
+		dragging = false;
+		dragX = 0;
+		await tick();
+
+		dragX = CARD_EXIT_SWIPE_PX;
+		const exitMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : CARD_EXIT_MS;
+		await wait(exitMs);
+
 		lastDismissed = entry;
 		undoRestore = null;
 		onlog(currentHabit, nailedItPayload(currentHabit, timezone));
+
+		stamp = null;
+		formPreview = null;
+		animating = false;
 	}
 
 	function handleSkip() {
-		if (!currentHabit || busy || !currentCanSkip || !onskip) return;
+		if (!currentHabit || busy || animating || !currentCanSkip || !onskip) return;
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
@@ -187,7 +233,10 @@
 							hideLog
 							initialForm={cardInitialForm}
 							fillHeight
-							{busy}
+							busy={busy || animating}
+							interactive={!animating}
+							{stamp}
+							{formPreview}
 							bind:dragX
 							bind:dragging
 							bind:actualValue
@@ -209,7 +258,7 @@
 			canSkip={currentCanSkip}
 			{canCheck}
 			canNailIt={canNailItAction}
-			{busy}
+			busy={busy || animating}
 			onundo={handleUndo}
 			onfail={handleFail}
 			onnailedit={handleNailedIt}

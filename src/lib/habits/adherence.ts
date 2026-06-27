@@ -86,6 +86,11 @@ export function nailedItInput(habit: Habit, timezone: string) {
 	if (habit.type === 'do_binary') {
 		return { actualValue: 1 };
 	}
+	if (habit.type === 'do_on_time') {
+		return {
+			actualTime: habit.target_time?.slice(0, 8) ?? nowTimeString(new Date(), timezone)
+		};
+	}
 	return defaultInputForHabit(habit, timezone);
 }
 

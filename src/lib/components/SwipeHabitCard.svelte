@@ -11,6 +11,7 @@
 		previewAdherenceLabel
 	} from '$lib/habits/adherence';
 	import { getIllustrationForAnchorTime } from '$lib/illustrations';
+	import CardActionStamp from '$lib/components/CardActionStamp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
 	import StepLogInput from '$lib/components/StepLogInput.svelte';
@@ -37,6 +38,8 @@
 		actualTime = $bindable(''),
 		satisfaction = $bindable<number | null>(null),
 		touched = $bindable(false),
+		stamp = null,
+		formPreview = null,
 		onfail,
 		oncheck
 	}: {
@@ -55,6 +58,8 @@
 		actualTime?: string;
 		satisfaction?: number | null;
 		touched?: boolean;
+		stamp?: 'nailed-it' | null;
+		formPreview?: HabitCardForm | null;
 		onfail?: () => void | Promise<void>;
 		oncheck?: () => void | Promise<void>;
 	} = $props();
@@ -91,6 +96,17 @@
 		satisfaction = blank.satisfaction;
 		touched = false;
 		actualTimeMinutes = null;
+	});
+
+	$effect(() => {
+		if (!formPreview) return;
+		actualValue = formPreview.actualValue;
+		actualTime = formPreview.actualTime;
+		actualTimeMinutes = formPreview.actualTime
+			? parseTimeToMinutes(formPreview.actualTime)
+			: null;
+		satisfaction = formPreview.satisfaction;
+		touched = formPreview.touched;
 	});
 
 	const form = $derived<HabitCardForm>({
@@ -140,9 +156,8 @@
 			: []
 	);
 
-	const transform = $derived(
-		interactive ? `translateX(${dragX}px) rotate(${dragX * 0.04}deg)` : undefined
-	);
+	const transform = $derived(`translateX(${dragX}px) rotate(${dragX * 0.04}deg)`);
+	const transformTransition = $derived(!dragging ? 'transform 200ms ease-out' : 'none');
 
 	function resetDrag() {
 		dragX = 0;
@@ -191,19 +206,23 @@
 </script>
 
 <div
-	class="select-none overflow-hidden rounded-2xl border border-surface-0/50 bg-surface-1 shadow-xl shadow-crust/50 {fillHeight
+	class="relative select-none overflow-hidden rounded-2xl border border-surface-0/50 bg-surface-1 shadow-xl shadow-crust/50 {fillHeight
 		? 'flex h-full min-h-0 flex-col'
 		: ''}"
 	role="group"
 	aria-label="{habit.name} logging card"
 	style:transform
-	style:transition={interactive && !dragging ? 'transform 200ms ease-out' : 'none'}
+	style:transition={transformTransition}
 	style:touch-action={interactive ? 'pan-y' : undefined}
 	onpointerdown={interactive ? onPointerDown : undefined}
 	onpointermove={interactive ? onPointerMove : undefined}
 	onpointerup={interactive ? onPointerUp : undefined}
 	onpointercancel={interactive ? onPointerUp : undefined}
 >
+	{#if stamp === 'nailed-it'}
+		<CardActionStamp label="Nailed it" variant="yellow" />
+	{/if}
+
 	<div
 		class="relative overflow-hidden bg-surface-0/15 {fillHeight
 			? 'min-h-0 flex-1'

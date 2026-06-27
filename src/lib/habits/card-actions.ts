@@ -60,6 +60,16 @@ export function nailedItPayload(habit: Habit, timezone: string): HabitLogPayload
 	};
 }
 
+export function nailedItForm(habit: Habit, timezone: string): HabitCardForm {
+	const input = nailedItInput(habit, timezone);
+	return {
+		actualValue: input.actualValue ?? null,
+		actualTime: (input.actualTime ?? '').slice(0, 5),
+		satisfaction: input.satisfaction ?? null,
+		touched: true
+	};
+}
+
 export function canCheckHabit(habit: Habit, form: HabitCardForm): boolean {
 	switch (habit.type) {
 		case 'do_binary':
