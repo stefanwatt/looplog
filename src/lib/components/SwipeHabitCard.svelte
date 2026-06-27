@@ -1,34 +1,43 @@
 <script lang="ts">
-	import type { Habit } from '$lib/database.types';
+	import type { Habit, HabitLog } from '$lib/database.types';
+	import type { HabitLogPayload } from '$lib/habits/log-actions';
 	import {
 		calculateAdherence,
 		canSubmitLog,
 		formatTimeLabel,
+		inputFromLog,
 		nailedItInput,
 		previewAdherenceLabel
 	} from '$lib/habits/adherence';
+	import { getIllustrationForAnchorTime } from '$lib/illustrations';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
 	import { mdiCheck, mdiClose, mdiPencil, mdiSkipNext, mdiTrophy } from '@mdi/js';
 
 	let {
 		habit,
+		log = null,
 		timezone,
 		onlog,
 		onskip,
 		canSkip = false,
 		busy = false,
 		interactive = true,
+		fillHeight = false,
+		illustrationSrc,
 		dragX = $bindable(0),
 		dragging = $bindable(false)
 	}: {
 		habit: Habit;
+		log?: HabitLog | null;
 		timezone: string;
-		onlog?: (payload: Record<string, unknown>) => Promise<void>;
+		onlog?: (payload: HabitLogPayload) => Promise<void>;
 		onskip?: () => Promise<void>;
 		canSkip?: boolean;
 		busy?: boolean;
 		interactive?: boolean;
+		fillHeight?: boolean;
+		illustrationSrc?: string;
 		dragX?: number;
 		dragging?: boolean;
 	} = $props();
@@ -38,9 +47,10 @@
 	let satisfaction = $state(3);
 
 	$effect(() => {
-		const input = nailedItInput(habit, timezone);
+		const input =
+			log != null ? inputFromLog(habit, log, timezone) : nailedItInput(habit, timezone);
 		actualValue =
-			habit.type === 'do_binary' ? null : (input.actualValue ?? 0);
+			habit.type === 'do_binary' ? (input.actualValue ?? null) : (input.actualValue ?? 0);
 		actualTime = (input.actualTime ?? '12:00').slice(0, 5);
 		satisfaction = input.satisfaction ?? 3;
 	});
@@ -52,6 +62,10 @@
 	);
 
 	const canSubmit = $derived(canSubmitLog(habit, { actualValue, actualTime, satisfaction }));
+
+	const resolvedIllustration = $derived(
+		illustrationSrc ?? getIllustrationForAnchorTime(habit.anchor_time)
+	);
 
 	const transform = $derived(
 		interactive ? `translateX(${dragX}px) rotate(${dragX * 0.04}deg)` : undefined
@@ -121,7 +135,9 @@
 </script>
 
 <div
-	class="select-none rounded-2xl border border-surface-0/50 bg-surface-1 p-5 shadow-xl shadow-crust/50"
+	class="select-none overflow-hidden rounded-2xl border border-surface-0/50 bg-surface-1 shadow-xl shadow-crust/50 {fillHeight
+		? 'flex h-full min-h-0 flex-col'
+		: ''}"
 	role="group"
 	aria-label="{habit.name} logging card"
 	style:transform
@@ -132,6 +148,20 @@
 	onpointerup={interactive ? onPointerUp : undefined}
 	onpointercancel={interactive ? onPointerUp : undefined}
 >
+	<div
+		class="relative overflow-hidden bg-surface-0/15 {fillHeight
+			? 'min-h-0 flex-1'
+			: 'h-44 shrink-0'}"
+		aria-hidden="true"
+	>
+		<img
+			src={resolvedIllustration}
+			alt=""
+			class="absolute inset-0 h-full w-full object-contain object-bottom p-6 pb-2"
+		/>
+	</div>
+
+	<div class="shrink-0 p-5 pt-3">
 	<div class="mb-5 flex items-start justify-between gap-3">
 		<div>
 			<p class="m-0 text-sm font-semibold text-blue">{formatTimeLabel(habit.anchor_time)}</p>
@@ -244,19 +274,5 @@
 			</button>
 		{/if}
 	</div>
-
-	{#if interactive}
-		<p class="mt-4 mb-0 flex items-center justify-center gap-3 text-center text-xs text-overlay-0">
-			<span class="inline-flex items-center gap-1 text-green">
-				<Icon path={mdiCheck} size={14} />
-				swipe right to log
-			</span>
-			{#if canSkip}
-				<span class="inline-flex items-center gap-1 text-red">
-					<Icon path={mdiClose} size={14} />
-					swipe left to skip
-				</span>
-			{/if}
-		</p>
-	{/if}
+	</div>
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Habit } from '$lib/database.types';
+	import type { HabitWithLog } from '$lib/database.types';
+	import type { HabitLogPayload } from '$lib/habits/log-actions';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 
 	let {
@@ -10,9 +11,9 @@
 		canSkip = false,
 		busy = false
 	}: {
-		habits: Habit[];
+		habits: HabitWithLog[];
 		timezone: string;
-		onlog: (payload: Record<string, unknown>) => Promise<void>;
+		onlog: (payload: HabitLogPayload) => Promise<void>;
 		onskip?: () => Promise<void>;
 		canSkip?: boolean;
 		busy?: boolean;
@@ -36,23 +37,25 @@
 	}
 </script>
 
-<div class="relative" style:margin-bottom="{stackPadding}px">
+<div class="relative h-full min-h-0" style:margin-bottom="{stackPadding}px">
 	{#each behindHabits as habit, i (habit.id)}
 		{@const depth = i + 1}
 		<div
-			class="pointer-events-none absolute inset-x-0 bottom-0 origin-bottom"
+			class="pointer-events-none absolute inset-0 origin-bottom"
 			style:transform={behindTransform(depth, dragProgress)}
 			style:z-index={10 - depth}
 			style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
 		>
-			<SwipeHabitCard habit={habit} {timezone} interactive={false} />
+			<SwipeHabitCard habit={habit} log={habit.log} {timezone} fillHeight interactive={false} />
 		</div>
 	{/each}
 
-	<div class="relative z-10">
+	<div class="relative z-10 h-full min-h-0">
 		<SwipeHabitCard
 			habit={habits[0]}
+			log={habits[0].log}
 			{timezone}
+			fillHeight
 			{canSkip}
 			{busy}
 			{onlog}

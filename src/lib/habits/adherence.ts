@@ -89,6 +89,17 @@ export function nailedItInput(habit: Habit, timezone: string) {
 	return defaultInputForHabit(habit, timezone);
 }
 
+export function inputFromLog(habit: Habit, log: HabitLog, timezone: string) {
+	if (log.status === 'logged') {
+		return {
+			actualValue: log.actual_value,
+			actualTime: log.actual_time,
+			satisfaction: log.satisfaction
+		};
+	}
+	return defaultInputForHabit(habit, timezone);
+}
+
 export function canSubmitLog(
 	habit: Habit,
 	input: {

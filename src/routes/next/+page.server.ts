@@ -1,13 +1,12 @@
 import { canSkipToday } from '$lib/habits/adherence';
-import { listRecentLogs, orderedPendingTimedHabits } from '$lib/habits/service';
+import { buildTimedHabitStack, listRecentLogs } from '$lib/habits/service';
 import { loadDayContext } from '$lib/server/day';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession }, url }) => {
 	const { user } = await safeGetSession();
 	if (!user) {
 		return {
-			nextHabit: null,
 			upcomingHabits: [],
 			canSkip: false,
 			timezone: 'UTC',
@@ -17,19 +16,25 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		};
 	}
 
-	const day = await loadDayContext(supabase, user.id);
+	const focusHabitId = url.searchParams.get('habitId');
+	const day = await loadDayContext(supabase, user.id, {
+		dateKey: url.searchParams.get('date') ?? undefined
+	});
 	const timed = day.timedHabits;
-	const upcomingHabits = orderedPendingTimedHabits(timed, new Date(), day.timezone).slice(0, 3);
+	const upcomingHabits = buildTimedHabitStack(timed, {
+		timezone: day.timezone,
+		focusHabitId
+	});
 	const doneCount = timed.filter((habit) => habit.log).length;
 
+	const currentHabit = upcomingHabits[0] ?? null;
 	let canSkip = false;
-	if (day.nextHabit) {
-		const recentLogs = await listRecentLogs(supabase, day.nextHabit.id, day.dateKey);
-		canSkip = canSkipToday(day.nextHabit, recentLogs, day.dateKey);
+	if (currentHabit) {
+		const recentLogs = await listRecentLogs(supabase, currentHabit.id, day.dateKey);
+		canSkip = canSkipToday(currentHabit, recentLogs, day.dateKey);
 	}
 
 	return {
-		nextHabit: day.nextHabit,
 		upcomingHabits,
 		canSkip,
 		timezone: day.timezone,

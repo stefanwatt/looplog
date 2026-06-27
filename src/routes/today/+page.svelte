@@ -1,7 +1,7 @@
 <script lang="ts">
 	import HabitRow from '$lib/components/HabitRow.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { mdiChevronLeft, mdiChevronRight, mdiPlus } from '@mdi/js';
+	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 
 	let { data } = $props();
 </script>
@@ -32,16 +32,8 @@
 	{:else}
 		<div class="grid gap-3">
 			{#each data.timedHabits as habit (habit.id)}
-				<HabitRow {habit} log={habit.log} />
+				<HabitRow {habit} log={habit.log} dateKey={data.dateKey} />
 			{/each}
 		</div>
 	{/if}
-
-	<a
-		class="fixed right-4 bottom-[5.5rem] grid size-[3.25rem] place-items-center rounded-full bg-blue text-crust no-underline shadow-lg shadow-blue/35"
-		href="/habits/new"
-		aria-label="Create habit"
-	>
-		<Icon path={mdiPlus} size={28} />
-	</a>
 </section>

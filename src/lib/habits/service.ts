@@ -111,6 +111,28 @@ export function pendingTimedHabits(habits: HabitWithLog[]): HabitWithLog[] {
 		.sort((a, b) => (a.anchor_time ?? '').localeCompare(b.anchor_time ?? ''));
 }
 
+const RELEVANCE_GRACE_MINUTES = 30;
+
+function anchorMinutes(habit: HabitWithLog): number {
+	return parseTimeToMinutes(habit.anchor_time ?? '00:00');
+}
+
+function isRelevantPendingHabit(
+	habitMinutes: number,
+	nowMinutes: number,
+	pendingAnchorMinutes: number[]
+): boolean {
+	if (habitMinutes > nowMinutes) return true;
+
+	const minutesPast = nowMinutes - habitMinutes;
+	if (minutesPast > RELEVANCE_GRACE_MINUTES) return false;
+
+	const laterHabitStarted = pendingAnchorMinutes.some(
+		(minutes) => minutes > habitMinutes && minutes <= nowMinutes
+	);
+	return !laterHabitStarted;
+}
+
 export function orderedPendingTimedHabits(
 	habits: HabitWithLog[],
 	now = new Date(),
@@ -120,23 +142,59 @@ export function orderedPendingTimedHabits(
 	if (pending.length === 0) return [];
 
 	const nowMinutes = parseTimeToMinutes(nowTimeString(now, timezone));
+	const pendingMinutes = pending.map(anchorMinutes);
 
-	pending.sort((a, b) => {
-		const aMinutes = parseTimeToMinutes(a.anchor_time ?? '00:00');
-		const bMinutes = parseTimeToMinutes(b.anchor_time ?? '00:00');
-		const aPastDue = aMinutes <= nowMinutes;
-		const bPastDue = bMinutes <= nowMinutes;
+	const eligible = pending.filter((habit) =>
+		isRelevantPendingHabit(anchorMinutes(habit), nowMinutes, pendingMinutes)
+	);
 
-		if (aPastDue !== bPastDue) return aPastDue ? -1 : 1;
-		if (aPastDue && bPastDue) return aMinutes - bMinutes;
+	eligible.sort((a, b) => {
+		const aMinutes = anchorMinutes(a);
+		const bMinutes = anchorMinutes(b);
+		const aDelta = Math.abs(aMinutes - nowMinutes);
+		const bDelta = Math.abs(bMinutes - nowMinutes);
+
+		if (aDelta !== bDelta) return aDelta - bDelta;
+
+		const aPast = aMinutes <= nowMinutes;
+		const bPast = bMinutes <= nowMinutes;
+		if (aPast !== bPast) return aPast ? -1 : 1;
+
 		return aMinutes - bMinutes;
 	});
 
-	return pending;
+	return eligible;
 }
 
 export function nextPendingHabit(habits: HabitWithLog[], now = new Date(), timezone: string) {
 	return orderedPendingTimedHabits(habits, now, timezone)[0] ?? null;
+}
+
+export function buildTimedHabitStack(
+	habits: HabitWithLog[],
+	options: {
+		now?: Date;
+		timezone: string;
+		focusHabitId?: string | null;
+		limit?: number;
+	}
+): HabitWithLog[] {
+	const { now = new Date(), timezone, focusHabitId, limit = 3 } = options;
+	const ordered = orderedPendingTimedHabits(habits, now, timezone);
+
+	if (!focusHabitId) {
+		return ordered.slice(0, limit);
+	}
+
+	const focused = habits.find(
+		(habit) => habit.id === focusHabitId && habit.anchor_time != null
+	);
+	if (!focused) {
+		return ordered.slice(0, limit);
+	}
+
+	const rest = ordered.filter((habit) => habit.id !== focused.id);
+	return [focused, ...rest].slice(0, limit);
 }
 
 export async function getHabit(client: Client, userId: string, habitId: string) {

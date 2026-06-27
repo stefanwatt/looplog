@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-	import { upsertLog } from '$lib/habits/service';
-	import { createClient } from '$lib/supabase/client';
 	import type { HabitWithLog } from '$lib/database.types';
-	import { mdiPlus, mdiPencil } from '@mdi/js';
+	import { logHabit, skipHabit, type HabitLogPayload } from '$lib/habits/log-actions';
+	import { mdiPencil } from '@mdi/js';
 
 	type AnytimeHabit = HabitWithLog & { canSkip: boolean };
 
@@ -14,26 +12,13 @@
 	let busyId = $state<string | null>(null);
 	let error = $state('');
 
-	async function handleLog(habit: AnytimeHabit, payload: Record<string, unknown>) {
+	async function handleLog(habit: AnytimeHabit, payload: HabitLogPayload) {
 		if (busyId) return;
 		busyId = habit.id;
 		error = '';
 
 		try {
-			const supabase = createClient();
-			const {
-				data: { user }
-			} = await supabase.auth.getUser();
-			if (!user) throw new Error('Not signed in');
-
-			await upsertLog(supabase, user.id, habit, data.dateKey, {
-				status: 'logged',
-				actualValue: payload.actualValue as number | undefined,
-				actualTime: payload.actualTime as string | undefined,
-				satisfaction: payload.satisfaction as number | undefined
-			});
-
-			await invalidateAll();
+			await logHabit(habit, data.dateKey, payload);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not save log';
 		} finally {
@@ -47,14 +32,7 @@
 		error = '';
 
 		try {
-			const supabase = createClient();
-			const {
-				data: { user }
-			} = await supabase.auth.getUser();
-			if (!user) throw new Error('Not signed in');
-
-			await upsertLog(supabase, user.id, habit, data.dateKey, { status: 'skipped' });
-			await invalidateAll();
+			await skipHabit(habit, data.dateKey);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not skip habit';
 		} finally {
@@ -120,12 +98,4 @@
 	{#if error}
 		<p class="mt-4 text-red">{error}</p>
 	{/if}
-
-	<a
-		class="fixed right-4 bottom-[5.5rem] grid size-[3.25rem] place-items-center rounded-full bg-blue text-crust no-underline shadow-lg shadow-blue/35"
-		href="/habits/new"
-		aria-label="Create habit"
-	>
-		<Icon path={mdiPlus} size={28} />
-	</a>
 </section>

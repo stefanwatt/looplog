@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import { page } from '$app/state';
+	import CreateHabitButton from '$lib/components/CreateHabitButton.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { mdiCalendarClock, mdiCalendarToday, mdiPlayCircle } from '@mdi/js';
 
@@ -20,22 +21,25 @@
 
 	{#if showNav}
 		<nav
-			class="fixed right-0 bottom-0 left-0 grid grid-cols-3 border-t border-surface-0/50 bg-mantle/95 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] backdrop-blur-md"
+			class="fixed right-0 bottom-0 left-0 flex items-center gap-2 border-t border-surface-0/50 bg-mantle/95 px-3 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] backdrop-blur-md"
 			aria-label="Main"
 		>
-			{#each tabs as tab (tab.href)}
-				<a
-					href={tab.href}
-					class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname ===
-					tab.href
-						? 'text-blue'
-						: 'text-subtext-0'}"
-					aria-current={page.url.pathname === tab.href ? 'page' : undefined}
-				>
-					<Icon path={tab.icon} size={20} />
-					{tab.label}
-				</a>
-			{/each}
+			<div class="grid min-w-0 flex-1 grid-cols-3">
+				{#each tabs as tab (tab.href)}
+					<a
+						href={tab.href}
+						class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname ===
+						tab.href
+							? 'text-blue'
+							: 'text-subtext-0'}"
+						aria-current={page.url.pathname === tab.href ? 'page' : undefined}
+					>
+						<Icon path={tab.icon} size={20} />
+						{tab.label}
+					</a>
+				{/each}
+			</div>
+			<CreateHabitButton />
 		</nav>
 	{/if}
 </div>
