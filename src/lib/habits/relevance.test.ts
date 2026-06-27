@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { HabitLog, HabitWithLog } from '$lib/database.types';
-import { buildTimedHabitStack, orderedPendingTimedHabits } from './service';
+import { buildAnytimeHabitStack, buildFocusStack, buildTimedHabitStack, orderedPendingTimedHabits } from './service';
 
 const timezone = 'UTC';
 
@@ -181,5 +181,74 @@ describe('buildTimedHabitStack', () => {
 
 		const ordered = orderedPendingTimedHabits(habits, atTime(16, 30), timezone);
 		expect(stack.map((h) => h.id)).toEqual(ordered.map((h) => h.id));
+	});
+});
+
+function anytimeHabit(id: string, name: string): HabitWithLog {
+	return {
+		...habit(id, name, '08:00'),
+		anchor_time: null
+	};
+}
+
+describe('buildAnytimeHabitStack', () => {
+	test('returns pending anytime habits alphabetically', () => {
+		const habits = [anytimeHabit('b', 'Brush'), anytimeHabit('a', 'Apple')];
+
+		const stack = buildAnytimeHabitStack(habits);
+
+		expect(stack.map((h) => h.id)).toEqual(['a', 'b']);
+	});
+
+	test('puts focused anytime habit first even when logged', () => {
+		const logged: HabitLog = {
+			id: 'log-1',
+			habit_id: 'a',
+			user_id: 'user',
+			log_date: '2025-06-27',
+			status: 'logged',
+			actual_value: 1,
+			actual_time: null,
+			satisfaction: null,
+			adherence_score: 100,
+			created_at: '',
+			updated_at: ''
+		};
+
+		const habits: HabitWithLog[] = [
+			{ ...anytimeHabit('a', 'Apple'), log: logged },
+			anytimeHabit('b', 'Brush')
+		];
+
+		const stack = buildAnytimeHabitStack(habits, { focusHabitId: 'a' });
+
+		expect(stack.map((h) => h.id)).toEqual(['a', 'b']);
+	});
+});
+
+describe('buildFocusStack', () => {
+	test('combines timed and anytime habits when filter is all', () => {
+		const timed = [habit('evening', 'Brush Teeth (Evening)', '17:00')];
+		const anytime = [anytimeHabit('water', 'Drink Water')];
+
+		const stack = buildFocusStack(timed, anytime, {
+			timezone,
+			now: atTime(16, 30)
+		});
+
+		expect(stack.map((h) => h.id)).toEqual(['evening', 'water']);
+	});
+
+	test('returns only anytime habits when filter is anytime', () => {
+		const timed = [habit('evening', 'Brush Teeth (Evening)', '17:00')];
+		const anytime = [anytimeHabit('water', 'Drink Water')];
+
+		const stack = buildFocusStack(timed, anytime, {
+			filter: 'anytime',
+			timezone,
+			now: atTime(16, 30)
+		});
+
+		expect(stack.map((h) => h.id)).toEqual(['water']);
 	});
 });

@@ -2,6 +2,7 @@
 	import type { Habit, HabitLog } from '$lib/database.types';
 	import Icon from '$lib/components/Icon.svelte';
 	import { formatTimeLabel } from '$lib/habits/adherence';
+	import { tabHref } from '$lib/habits/filter';
 	import { resetHabitLog } from '$lib/habits/log-actions';
 	import { statusLabel } from '$lib/habits/service';
 	import { mdiChevronRight, mdiPencil, mdiRefresh } from '@mdi/js';
@@ -14,8 +15,8 @@
 
 	let resetting = $state(false);
 
-	const nextHref = $derived(
-		`/next?habitId=${habit.id}${dateKey ? `&date=${dateKey}` : ''}`
+	const focusHref = $derived(
+		tabHref('/focus', { habitId: habit.id, date: dateKey })
 	);
 	const canReset = $derived(log != null);
 
@@ -36,7 +37,7 @@
 
 <article class="overflow-hidden rounded-2xl border border-surface-0/40 bg-surface-0/40">
 	<a
-		href={nextHref}
+		href={focusHref}
 		class="flex items-center justify-between gap-4 px-4 py-4 no-underline text-inherit"
 	>
 		<div class="min-w-0">

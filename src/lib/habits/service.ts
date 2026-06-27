@@ -150,6 +150,12 @@ export function pendingTimedHabits(habits: HabitWithLog[]): HabitWithLog[] {
 		.sort((a, b) => (a.anchor_time ?? '').localeCompare(b.anchor_time ?? ''));
 }
 
+export function pendingAnytimeHabits(habits: HabitWithLog[]): HabitWithLog[] {
+	return habits
+		.filter((habit) => habit.anchor_time == null && !habit.log)
+		.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 const RELEVANCE_GRACE_MINUTES = 30;
 
 function anchorMinutes(habit: HabitWithLog): number {
@@ -256,6 +262,96 @@ export function buildTimedHabitStack(
 
 	const rest = ordered.filter((habit) => habit.id !== focused.id);
 	return [focused, ...rest].slice(0, limit);
+}
+
+export function buildAnytimeHabitStack(
+	habits: HabitWithLog[],
+	options: {
+		focusHabitId?: string | null;
+		limit?: number;
+	} = {}
+): HabitWithLog[] {
+	const { focusHabitId, limit = 3 } = options;
+	const pending = pendingAnytimeHabits(habits);
+
+	if (!focusHabitId) {
+		return pending.slice(0, limit);
+	}
+
+	const focused = habits.find(
+		(habit) => habit.id === focusHabitId && habit.anchor_time == null
+	);
+	if (!focused) {
+		return pending.slice(0, limit);
+	}
+
+	const rest = pending.filter((habit) => habit.id !== focused.id);
+	return [focused, ...rest].slice(0, limit);
+}
+
+export type FocusHabitFilter = 'all' | 'timed' | 'anytime';
+
+export function buildFocusStack(
+	timedHabits: HabitWithLog[],
+	anytimeHabits: HabitWithLog[],
+	options: {
+		filter?: FocusHabitFilter;
+		now?: Date;
+		timezone: string;
+		focusHabitId?: string | null;
+		limit?: number;
+		catchUp?: boolean;
+	}
+): HabitWithLog[] {
+	const {
+		filter = 'all',
+		now = new Date(),
+		timezone,
+		focusHabitId,
+		limit = 3,
+		catchUp = false
+	} = options;
+
+	if (focusHabitId) {
+		const focusedAnytime = anytimeHabits.find((habit) => habit.id === focusHabitId);
+		if (focusedAnytime && (filter === 'all' || filter === 'anytime')) {
+			return buildAnytimeHabitStack(anytimeHabits, { focusHabitId, limit });
+		}
+
+		const focusedTimed = timedHabits.find((habit) => habit.id === focusHabitId);
+		if (focusedTimed && (filter === 'all' || filter === 'timed')) {
+			return buildTimedHabitStack(timedHabits, {
+				now,
+				timezone,
+				focusHabitId,
+				limit,
+				catchUp
+			});
+		}
+	}
+
+	if (filter === 'timed') {
+		return buildTimedHabitStack(timedHabits, { now, timezone, limit, catchUp });
+	}
+
+	if (filter === 'anytime') {
+		return buildAnytimeHabitStack(anytimeHabits, { limit });
+	}
+
+	const timedStack = buildTimedHabitStack(timedHabits, {
+		now,
+		timezone,
+		limit,
+		catchUp
+	});
+	if (timedStack.length >= limit) {
+		return timedStack;
+	}
+
+	const anytimeStack = buildAnytimeHabitStack(anytimeHabits, {
+		limit: limit - timedStack.length
+	});
+	return [...timedStack, ...anytimeStack];
 }
 
 export async function getHabit(client: Client, userId: string, habitId: string) {

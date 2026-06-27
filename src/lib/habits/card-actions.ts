@@ -62,12 +62,36 @@ export function nailedItPayload(habit: Habit, timezone: string): HabitLogPayload
 
 export function nailedItForm(habit: Habit, timezone: string): HabitCardForm {
 	const input = nailedItInput(habit, timezone);
+	return payloadToForm(
+		{
+			actualValue: input.actualValue,
+			actualTime: input.actualTime,
+			satisfaction: input.satisfaction
+		},
+		{ ...blankCardForm(habit), touched: false }
+	);
+}
+
+function payloadToForm(payload: HabitLogPayload, fallback: HabitCardForm): HabitCardForm {
 	return {
-		actualValue: input.actualValue ?? null,
-		actualTime: (input.actualTime ?? '').slice(0, 5),
-		satisfaction: input.satisfaction ?? null,
+		actualValue:
+			payload.actualValue !== undefined ? (payload.actualValue ?? null) : fallback.actualValue,
+		actualTime:
+			payload.actualTime !== undefined
+				? (payload.actualTime ?? '').slice(0, 5)
+				: fallback.actualTime,
+		satisfaction:
+			payload.satisfaction !== undefined ? (payload.satisfaction ?? null) : fallback.satisfaction,
 		touched: true
 	};
+}
+
+export function failForm(habit: Habit): HabitCardForm {
+	return payloadToForm(failPayload(habit), { ...blankCardForm(habit), touched: false });
+}
+
+export function checkForm(habit: Habit, form: HabitCardForm): HabitCardForm {
+	return payloadToForm(checkPayload(habit, form), form);
 }
 
 export function canCheckHabit(habit: Habit, form: HabitCardForm): boolean {

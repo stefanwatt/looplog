@@ -46,6 +46,12 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
 	});
 };
 
+const legacyTabRedirects: Record<string, string> = {
+	'/next': '/focus',
+	'/today': '/day',
+	'/anytime': '/day?filter=anytime'
+};
+
 const authGuard: Handle = async ({ event, resolve }) => {
 	const { session } = await event.locals.safeGetSession();
 	const path = event.url.pathname;
@@ -55,8 +61,12 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		redirect(303, '/auth/login');
 	}
 
+	if (session && path in legacyTabRedirects) {
+		redirect(303, legacyTabRedirects[path]);
+	}
+
 	if (session && path === '/auth/login') {
-		redirect(303, '/next');
+		redirect(303, '/focus');
 	}
 
 	return resolve(event);

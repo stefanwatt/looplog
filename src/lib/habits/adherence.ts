@@ -1,5 +1,12 @@
 import type { Habit, HabitLog } from '$lib/database.types';
 import { shiftDateKey } from '$lib/habits/schedule';
+import {
+	mdiEmoticonCryOutline,
+	mdiEmoticonHappyOutline,
+	mdiEmoticonNeutralOutline,
+	mdiEmoticonOutline,
+	mdiEmoticonSadOutline
+} from '@mdi/js';
 
 function parseTimeToMinutes(time: string): number {
 	const [hours, minutes] = time.slice(0, 5).split(':').map(Number);
@@ -61,11 +68,12 @@ export function calculateAdherence(
 	}
 }
 
-export function previewAdherenceLabel(score: number): string {
-	if (score >= 90) return 'Great';
-	if (score >= 70) return 'Good';
-	if (score >= 40) return 'OK';
-	return 'Rough';
+export function previewAdherenceIcon(score: number): string {
+	if (score >= 80) return mdiEmoticonOutline;
+	if (score >= 60) return mdiEmoticonHappyOutline;
+	if (score >= 40) return mdiEmoticonNeutralOutline;
+	if (score >= 20) return mdiEmoticonSadOutline;
+	return mdiEmoticonCryOutline;
 }
 
 export function defaultInputForHabit(habit: Habit, timezone: string) {

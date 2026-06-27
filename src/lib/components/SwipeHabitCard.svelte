@@ -8,7 +8,7 @@
 		inputFromLog,
 		nowTimeString,
 		parseTimeToMinutes,
-		previewAdherenceLabel
+		previewAdherenceIcon
 	} from '$lib/habits/adherence';
 	import { getIllustrationForAnchorTime } from '$lib/illustrations';
 	import CardActionStamp from '$lib/components/CardActionStamp.svelte';
@@ -20,6 +20,11 @@
 		quickTargetOptions,
 		quickTimeOptions
 	} from '$lib/habits/log-input';
+	import {
+		CARD_ACTION_STAMPS,
+		CARD_SWIPE_ACTION_THRESHOLD_PX,
+		type CardActionStampType
+	} from '$lib/habits/card-action-animation';
 	import { mdiPencil } from '@mdi/js';
 
 	let {
@@ -58,7 +63,7 @@
 		actualTime?: string;
 		satisfaction?: number | null;
 		touched?: boolean;
-		stamp?: 'nailed-it' | null;
+		stamp?: CardActionStampType | null;
 		formPreview?: HabitCardForm | null;
 		onfail?: () => void | Promise<void>;
 		oncheck?: () => void | Promise<void>;
@@ -187,7 +192,7 @@
 
 	async function onPointerUp() {
 		if (!dragging) return;
-		const threshold = 96;
+		const threshold = CARD_SWIPE_ACTION_THRESHOLD_PX;
 
 		if (dragX <= -threshold && onfail) {
 			resetDrag();
@@ -219,8 +224,11 @@
 	onpointerup={interactive ? onPointerUp : undefined}
 	onpointercancel={interactive ? onPointerUp : undefined}
 >
-	{#if stamp === 'nailed-it'}
-		<CardActionStamp label="Nailed it" variant="yellow" />
+	{#if stamp}
+		<CardActionStamp
+			label={CARD_ACTION_STAMPS[stamp].label}
+			variant={CARD_ACTION_STAMPS[stamp].variant}
+		/>
 	{/if}
 
 	<div
@@ -292,12 +300,14 @@
 			</div>
 		{/if}
 
-		<div class="flex items-baseline gap-2">
+		<div class="flex items-center gap-2">
 			{#if previewScore == null}
 				<span class="text-subtext-0">Swipe or use the buttons below</span>
 			{:else}
-				<span class="text-3xl font-bold">{previewScore}%</span>
-				<span class="text-subtext-0">{previewAdherenceLabel(previewScore)}</span>
+				<div class="flex items-center gap-2 text-3xl leading-none">
+					<span class="inline-block w-[4.25ch] text-right font-bold tabular-nums">{previewScore}%</span>
+					<Icon path={previewAdherenceIcon(previewScore)} size="1em" class="text-subtext-0" />
+				</div>
 			{/if}
 		</div>
 	</div>

@@ -5,6 +5,8 @@ import {
 	canCheckHabit,
 	canNailIt,
 	checkPayload,
+	checkForm,
+	failForm,
 	failPayload
 } from './card-actions';
 
@@ -56,5 +58,20 @@ describe('card-actions', () => {
 	test('canNailIt is false for binary', () => {
 		expect(canNailIt(binary)).toBe(false);
 		expect(canNailIt(target)).toBe(true);
+	});
+
+	test('failForm fills zero values for target habits', () => {
+		expect(failForm(target)).toEqual({
+			actualValue: 0,
+			actualTime: '',
+			satisfaction: null,
+			touched: true
+		});
+	});
+
+	test('checkForm preserves entered target value', () => {
+		const form = { ...blankCardForm(target), touched: true, actualValue: 30 };
+		expect(checkForm(target, form).actualValue).toBe(30);
+		expect(checkPayload(target, checkForm(target, form))).toEqual({ actualValue: 30 });
 	});
 });

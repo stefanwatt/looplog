@@ -103,7 +103,7 @@
 			});
 
 			getDayStore().applyHabit(habit);
-			await goto('/next', { invalidateAll: false });
+			await goto('/focus', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not create habit';
 		} finally {
@@ -121,7 +121,7 @@
 
 <section class="grid gap-4">
 	<header>
-		<a href="/next" class="inline-flex items-center gap-1 text-blue no-underline">
+		<a href="/focus" class="inline-flex items-center gap-1 text-blue no-underline">
 			<Icon path={mdiChevronLeft} size={20} />
 			Back
 		</a>
@@ -259,7 +259,7 @@
 				<label for="anchor" class="text-sm text-subtext-1">Anchor time</label>
 				<input id="anchor" type="time" bind:value={anchorTime} required class={inputClass} />
 				<p class="m-0 text-sm text-subtext-0">
-					Used for ordering in Next — not a deadline.
+					Used for ordering in Focus — not a deadline.
 				</p>
 			{/if}
 		</div>

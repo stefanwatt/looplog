@@ -5,20 +5,25 @@
 	import {
 		canCheckHabit,
 		canNailIt,
+		checkForm,
 		checkPayload,
+		failForm,
 		failPayload,
 		nailedItForm,
 		nailedItPayload,
 		type HabitCardForm
 	} from '$lib/habits/card-actions';
 	import {
+		CARD_ACTION_STAMPS,
 		CARD_EXIT_MS,
 		CARD_EXIT_SWIPE_PX,
+		CARD_SWIPE_ACTION_THRESHOLD_PX,
 		CARD_STAMP_HOLD_MS,
+		type CardActionStampType,
 		wait
 	} from '$lib/habits/card-action-animation';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
-	import NextStackEmptyState from '$lib/components/NextStackEmptyState.svelte';
+	import FocusStackEmptyState from '$lib/components/FocusStackEmptyState.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 
 	type UndoEntry = {
@@ -57,7 +62,7 @@
 	let satisfaction = $state<number | null>(null);
 	let touched = $state(false);
 	let animating = $state(false);
-	let stamp = $state<'nailed-it' | null>(null);
+	let stamp = $state<CardActionStampType | null>(null);
 	let formPreview = $state<HabitCardForm | null>(null);
 
 	const displayHabits = $derived.by(() => {
@@ -104,7 +109,9 @@
 	const PEEK_PX = 16;
 	const SCALE_STEP = 0.05;
 
-	const dragProgress = $derived(Math.min(Math.abs(dragX) / 160, 1));
+	const dragProgress = $derived(
+		Math.min(Math.abs(dragX) / CARD_SWIPE_ACTION_THRESHOLD_PX, 1)
+	);
 	const behindHabits = $derived(displayHabits.slice(1, 3));
 	const stackPadding = $derived(behindHabits.length * PEEK_PX);
 
@@ -126,47 +133,53 @@
 
 	function handleFail() {
 		if (!currentHabit || busy || animating) return;
-		const entry: UndoEntry = {
-			habit: currentHabit,
-			form: snapshotForm(),
-			canSkip: currentCanSkip
-		};
-		lastDismissed = entry;
-		undoRestore = null;
-		onlog(currentHabit, failPayload(currentHabit));
+		void runLogAnimation({
+			stamp: 'failure',
+			formPreview: failForm(currentHabit),
+			complete: (habit) => onlog(habit, failPayload(habit))
+		});
 	}
 
 	function handleCheck() {
 		if (!currentHabit || busy || animating || !canCheck) return;
-		const entry: UndoEntry = {
-			habit: currentHabit,
-			form: snapshotForm(),
-			canSkip: currentCanSkip
-		};
-		lastDismissed = entry;
-		undoRestore = null;
-		onlog(currentHabit, checkPayload(currentHabit, currentForm));
+		void runLogAnimation({
+			stamp: 'success',
+			formPreview: checkForm(currentHabit, currentForm),
+			complete: (habit) => onlog(habit, checkPayload(habit, currentForm))
+		});
 	}
 
 	function handleNailedIt() {
 		if (!currentHabit || busy || animating || !canNailItAction) return;
-		void runNailedItAnimation();
+		void runLogAnimation({
+			stamp: 'nailed-it',
+			formPreview: nailedItForm(currentHabit, timezone),
+			complete: (habit) => onlog(habit, nailedItPayload(habit, timezone))
+		});
 	}
 
-	async function runNailedItAnimation() {
+	async function runLogAnimation({
+		stamp: stampType,
+		formPreview: preview,
+		complete
+	}: {
+		stamp: CardActionStampType;
+		formPreview: HabitCardForm;
+		complete: (habit: HabitWithLog) => void;
+	}) {
 		if (!currentHabit) return;
 
-		animating = true;
-		dragging = false;
-
+		const config = CARD_ACTION_STAMPS[stampType];
 		const entry: UndoEntry = {
 			habit: currentHabit,
 			form: snapshotForm(),
 			canSkip: currentCanSkip
 		};
 
-		formPreview = nailedItForm(currentHabit, timezone);
-		stamp = 'nailed-it';
+		animating = true;
+		dragging = false;
+		formPreview = preview;
+		stamp = stampType;
 		await tick();
 
 		const holdMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : CARD_STAMP_HOLD_MS;
@@ -176,13 +189,13 @@
 		dragX = 0;
 		await tick();
 
-		dragX = CARD_EXIT_SWIPE_PX;
+		dragX = config.exitDirection === 'right' ? CARD_EXIT_SWIPE_PX : -CARD_EXIT_SWIPE_PX;
 		const exitMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : CARD_EXIT_MS;
 		await wait(exitMs);
 
 		lastDismissed = entry;
 		undoRestore = null;
-		onlog(currentHabit, nailedItPayload(currentHabit, timezone));
+		complete(currentHabit);
 
 		stamp = null;
 		formPreview = null;
@@ -249,7 +262,7 @@
 					{/key}
 				</div>
 			{:else}
-				<NextStackEmptyState message="Nothing else up next right now." />
+				<FocusStackEmptyState message="Nothing else in focus right now." />
 			{/if}
 		</div>
 

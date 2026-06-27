@@ -12,7 +12,7 @@
 		actions?: Snippet;
 	} = $props();
 
-	const todayButtonClass =
+	const dayButtonClass =
 		'mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-blue px-5 py-3 font-semibold text-white no-underline';
 </script>
 
@@ -28,10 +28,10 @@
 	{#if actions}
 		{@render actions()}
 	{:else}
-		<a href="/today" class="mt-3 text-blue">Check Today for earlier habits</a>
-		<a href="/today" class={todayButtonClass}>
+		<a href="/day" class="mt-3 text-blue">Check Day for earlier habits</a>
+		<a href="/day" class={dayButtonClass}>
 			<Icon path={mdiCalendarToday} size={20} />
-			Go to Today
+			Go to Day
 		</a>
 	{/if}
 </div>

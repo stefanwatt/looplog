@@ -2,11 +2,12 @@ import { canSkipToday } from '$lib/habits/adherence';
 import type { Habit, HabitLog, HabitWithLog } from '$lib/database.types';
 import { dayViewsFromData, type LoadedDayData } from '$lib/habits/load-day';
 import {
-	buildTimedHabitStack,
+	buildFocusStack,
 	hasCatchUpHabits,
 	listLogsForDates,
 	recentLogsMapFromRecord
 } from '$lib/habits/service';
+import type { HabitFilter } from '$lib/habits/filter';
 import { dateKeyInTimezone, parseDateKey, shiftDateKey } from '$lib/habits/schedule';
 import { createClient } from '$lib/supabase/client';
 
@@ -89,10 +90,11 @@ class DayStore {
 		return canSkipToday(habit, this.recentLogsByHabit.get(habit.id) ?? [], dateKey);
 	}
 
-	nextStackFor(options: {
+	focusStackFor(options: {
 		dateKey?: string;
 		focusHabitId?: string | null;
 		catchUp?: boolean;
+		filter?: HabitFilter;
 		now?: Date;
 	}) {
 		const dateKey = options.dateKey ?? this.todayDateKey;
@@ -100,31 +102,55 @@ class DayStore {
 			return {
 				upcomingHabits: [],
 				doneCount: 0,
-				timedCount: 0,
+				totalCount: 0,
 				catchUpAvailable: false,
 				canSkip: false
 			};
 		}
 
+		const filter = options.filter ?? 'all';
 		const timed = this.timedHabitsFor(dateKey);
+		const anytime = this.anytimeHabitsFor(dateKey);
 		const now = options.now ?? new Date();
-		const upcomingHabits = buildTimedHabitStack(timed, {
+		const upcomingHabits = buildFocusStack(timed, anytime, {
+			filter,
 			timezone: this.timezone,
 			focusHabitId: options.focusHabitId,
 			catchUp: options.catchUp,
 			now
 		});
-		const doneCount = timed.filter((habit) => habit.log).length;
+
+		const timedDone = timed.filter((habit) => habit.log).length;
+		const anytimeDone = anytime.filter((habit) => habit.log).length;
+		const doneCount =
+			filter === 'timed'
+				? timedDone
+				: filter === 'anytime'
+					? anytimeDone
+					: timedDone + anytimeDone;
+		const totalCount =
+			filter === 'timed'
+				? timed.length
+				: filter === 'anytime'
+					? anytime.length
+					: timed.length + anytime.length;
 		const catchUpAvailable =
-			!options.catchUp && hasCatchUpHabits(timed, now, this.timezone);
+			(filter === 'all' || filter === 'timed') &&
+			!options.catchUp &&
+			hasCatchUpHabits(timed, now, this.timezone);
 		const currentHabit = upcomingHabits[0] ?? null;
+		const anytimeById = new Map(anytime.map((habit) => [habit.id, habit]));
 
 		return {
 			upcomingHabits,
 			doneCount,
-			timedCount: timed.length,
+			totalCount,
 			catchUpAvailable,
-			canSkip: currentHabit ? this.canSkipHabit(currentHabit, dateKey) : false
+			canSkip: currentHabit
+				? currentHabit.anchor_time != null
+					? this.canSkipHabit(currentHabit, dateKey)
+					: (anytimeById.get(currentHabit.id)?.canSkip ?? false)
+				: false
 		};
 	}
 

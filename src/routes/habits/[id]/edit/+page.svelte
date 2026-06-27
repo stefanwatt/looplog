@@ -98,7 +98,7 @@
 			});
 
 			getDayStore().applyHabit(updated);
-			await goto('/today', { invalidateAll: false });
+			await goto('/day', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not update habit';
 		} finally {
@@ -125,7 +125,7 @@
 
 			const archived = await archiveHabit(supabase, user.id, habit.id);
 			getDayStore().applyHabit(archived);
-			await goto('/today', { invalidateAll: false });
+			await goto('/day', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not delete habit';
 		} finally {
@@ -143,7 +143,7 @@
 
 <section class="grid gap-4">
 	<header>
-		<a href="/today" class="inline-flex items-center gap-1 text-blue no-underline">
+		<a href="/day" class="inline-flex items-center gap-1 text-blue no-underline">
 			<Icon path={mdiChevronLeft} size={20} />
 			Back
 		</a>
@@ -272,7 +272,7 @@
 				<label for="anchor" class="text-sm text-subtext-1">Anchor time</label>
 				<input id="anchor" type="time" bind:value={anchorTime} required class={inputClass} />
 				<p class="m-0 text-sm text-subtext-0">
-					Used for ordering in Next — not a deadline.
+					Used for ordering in Focus — not a deadline.
 				</p>
 			{/if}
 		</div>

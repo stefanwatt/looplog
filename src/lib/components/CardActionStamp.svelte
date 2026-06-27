@@ -1,5 +1,5 @@
 <script lang="ts">
-	type CardStampVariant = 'yellow' | 'green' | 'red';
+	import type { CardStampVariant } from '$lib/habits/card-action-animation';
 
 	let {
 		label,
