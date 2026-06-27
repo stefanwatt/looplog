@@ -77,6 +77,45 @@ export async function listRecentLogs(client: Client, habitId: string, beforeDate
 	return data;
 }
 
+export async function listRecentLogsForHabits(
+	client: Client,
+	userId: string,
+	habitIds: string[],
+	beforeDateKey: string,
+	limit = 14
+): Promise<Map<string, HabitLog[]>> {
+	if (habitIds.length === 0) return new Map();
+
+	const { data, error } = await client
+		.from('habit_logs')
+		.select('*')
+		.eq('user_id', userId)
+		.in('habit_id', habitIds)
+		.lt('log_date', beforeDateKey)
+		.order('log_date', { ascending: false });
+
+	if (error) throw error;
+
+	const byHabit = new Map<string, HabitLog[]>();
+	for (const log of data ?? []) {
+		const existing = byHabit.get(log.habit_id) ?? [];
+		if (existing.length < limit) {
+			existing.push(log);
+			byHabit.set(log.habit_id, existing);
+		}
+	}
+
+	return byHabit;
+}
+
+export function recentLogsMapFromRecord(record: Record<string, HabitLog[]>): Map<string, HabitLog[]> {
+	return new Map(Object.entries(record));
+}
+
+export function recentLogsMapToRecord(map: Map<string, HabitLog[]>): Record<string, HabitLog[]> {
+	return Object.fromEntries(map);
+}
+
 export function attachLogs(habits: Habit[], logs: HabitLog[], dateKey: string): HabitWithLog[] {
 	const byHabit = new Map(logs.filter((log) => log.log_date === dateKey).map((log) => [log.habit_id, log]));
 
@@ -170,6 +209,21 @@ export function nextPendingHabit(habits: HabitWithLog[], now = new Date(), timez
 	return orderedPendingTimedHabits(habits, now, timezone)[0] ?? null;
 }
 
+export function hasCatchUpHabits(
+	habits: HabitWithLog[],
+	now = new Date(),
+	timezone: string
+): boolean {
+	const pending = pendingTimedHabits(habits);
+	if (pending.length === 0) return false;
+
+	const relevant = orderedPendingTimedHabits(habits, now, timezone);
+	if (relevant.length === 0) return true;
+
+	const relevantIds = new Set(relevant.map((habit) => habit.id));
+	return pending.some((habit) => !relevantIds.has(habit.id));
+}
+
 export function buildTimedHabitStack(
 	habits: HabitWithLog[],
 	options: {
@@ -177,10 +231,17 @@ export function buildTimedHabitStack(
 		timezone: string;
 		focusHabitId?: string | null;
 		limit?: number;
+		catchUp?: boolean;
 	}
 ): HabitWithLog[] {
-	const { now = new Date(), timezone, focusHabitId, limit = 3 } = options;
-	const ordered = orderedPendingTimedHabits(habits, now, timezone);
+	const { now = new Date(), timezone, focusHabitId, limit = 3, catchUp = false } = options;
+	const ordered = catchUp
+		? pendingTimedHabits(habits)
+		: orderedPendingTimedHabits(habits, now, timezone);
+
+	if (catchUp) {
+		return ordered;
+	}
 
 	if (!focusHabitId) {
 		return ordered.slice(0, limit);

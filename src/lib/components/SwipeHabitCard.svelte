@@ -6,11 +6,19 @@
 		calculateAdherence,
 		formatTimeLabel,
 		inputFromLog,
+		nowTimeString,
+		parseTimeToMinutes,
 		previewAdherenceLabel
 	} from '$lib/habits/adherence';
 	import { getIllustrationForAnchorTime } from '$lib/illustrations';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
+	import StepLogInput from '$lib/components/StepLogInput.svelte';
+	import {
+		minutesToTimeString,
+		quickTargetOptions,
+		quickTimeOptions
+	} from '$lib/habits/log-input';
 	import { mdiPencil } from '@mdi/js';
 
 	let {
@@ -52,6 +60,7 @@
 	} = $props();
 
 	let startX = $state(0);
+	let actualTimeMinutes = $state<number | null>(null);
 
 	$effect(() => {
 		habit.id;
@@ -61,6 +70,7 @@
 			actualTime = initialForm.actualTime;
 			satisfaction = initialForm.satisfaction;
 			touched = initialForm.touched;
+			actualTimeMinutes = actualTime ? parseTimeToMinutes(actualTime) : null;
 			return;
 		}
 
@@ -71,6 +81,7 @@
 			actualTime = (input.actualTime ?? '').slice(0, 5);
 			satisfaction = input.satisfaction ?? null;
 			touched = true;
+			actualTimeMinutes = actualTime ? parseTimeToMinutes(actualTime) : null;
 			return;
 		}
 
@@ -79,6 +90,7 @@
 		actualTime = blank.actualTime;
 		satisfaction = blank.satisfaction;
 		touched = false;
+		actualTimeMinutes = null;
 	});
 
 	const form = $derived<HabitCardForm>({
@@ -109,6 +121,25 @@
 		illustrationSrc ?? getIllustrationForAnchorTime(habit.anchor_time)
 	);
 
+	const logStep = $derived(habit.log_step ?? 5);
+
+	const targetQuickOptions = $derived(
+		habit.type === 'do_target' && habit.target_value != null
+			? quickTargetOptions(Number(habit.target_value))
+			: []
+	);
+
+	const timeQuickOptions = $derived(
+		habit.type === 'do_on_time' && habit.target_time
+			? quickTimeOptions(
+					habit.target_time,
+					logStep,
+					habit.grace_minutes,
+					parseTimeToMinutes(nowTimeString(new Date(), timezone))
+				)
+			: []
+	);
+
 	const transform = $derived(
 		interactive ? `translateX(${dragX}px) rotate(${dragX * 0.04}deg)` : undefined
 	);
@@ -120,6 +151,11 @@
 
 	function markTouched() {
 		touched = true;
+	}
+
+	function syncActualTimeFromMinutes() {
+		actualTime = actualTimeMinutes == null ? '' : minutesToTimeString(actualTimeMinutes);
+		markTouched();
 	}
 
 	function onPointerDown(event: PointerEvent) {
@@ -198,37 +234,37 @@
 		</div>
 
 		{#if habit.type === 'do_target'}
-			<div class="mb-4 grid gap-3">
-				<label class="m-0 text-subtext-1" for="value-{habit.id}">
-					{actualValue ?? '—'} / {habit.target_value} {habit.target_unit}
-				</label>
-				<input
-					id="value-{habit.id}"
-					type="range"
-					min="0"
-					max={Number(habit.target_value) * 1.5}
-					step="1"
-					value={actualValue ?? 0}
+			<div class="mb-4 grid gap-2">
+				<p class="m-0 text-subtext-1">
+					Target {habit.target_value} {habit.target_unit}
+				</p>
+				<StepLogInput
+					bind:value={actualValue}
+					step={logStep}
+					baseline={0}
+					min={0}
+					quickOptions={targetQuickOptions}
+					formatDisplay={(value) => `${value} ${habit.target_unit}`}
 					disabled={busy}
-					class="w-full accent-blue"
-					oninput={(event) => {
-						actualValue = Number((event.currentTarget as HTMLInputElement).value);
-						markTouched();
-					}}
+					ariaLabel="Actual amount for {habit.name}"
+					onselect={markTouched}
 				/>
 			</div>
 		{:else if habit.type === 'do_on_time'}
-			<div class="mb-4 grid gap-3">
-				<label class="m-0 text-subtext-1" for="time-{habit.id}">Actual time</label>
-				<input
-					id="time-{habit.id}"
-					type="time"
-					bind:value={actualTime}
-					disabled={busy}
-					class="w-full rounded-xl border border-surface-0 bg-crust px-3 py-2"
-					onchange={markTouched}
-				/>
+			<div class="mb-4 grid gap-2">
 				<p class="m-0 text-subtext-1">Target {formatTimeLabel(habit.target_time)}</p>
+				<StepLogInput
+					bind:value={actualTimeMinutes}
+					step={logStep}
+					baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
+					min={0}
+					max={24 * 60 - 1}
+					quickOptions={timeQuickOptions}
+					formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
+					disabled={busy}
+					ariaLabel="Actual time for {habit.name}"
+					onselect={syncActualTimeFromMinutes}
+				/>
 			</div>
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
 			<div class="mb-4 grid gap-3">

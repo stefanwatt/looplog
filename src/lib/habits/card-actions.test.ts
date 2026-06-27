@@ -22,6 +22,7 @@ const binary: Habit = {
 	target_time: null,
 	grace_minutes: 5,
 	falloff_minutes_per_10_percent: 6,
+	log_step: 5,
 	archived_at: null,
 	created_at: '',
 	updated_at: ''

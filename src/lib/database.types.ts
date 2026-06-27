@@ -42,6 +42,7 @@ export interface Database {
 					target_time: string | null;
 					grace_minutes: number;
 					falloff_minutes_per_10_percent: number;
+					log_step: number;
 					archived_at: string | null;
 					created_at: string;
 					updated_at: string;
@@ -60,6 +61,7 @@ export interface Database {
 					target_time?: string | null;
 					grace_minutes?: number;
 					falloff_minutes_per_10_percent?: number;
+					log_step?: number;
 					archived_at?: string | null;
 					created_at?: string;
 					updated_at?: string;
@@ -78,6 +80,7 @@ export interface Database {
 					target_time?: string | null;
 					grace_minutes?: number;
 					falloff_minutes_per_10_percent?: number;
+					log_step?: number;
 					archived_at?: string | null;
 					created_at?: string;
 					updated_at?: string;

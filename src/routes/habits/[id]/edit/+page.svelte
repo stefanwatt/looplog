@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
-	import { defaultScoringForType, habitTypeHasConfigStep } from '$lib/habits/defaults';
+	import { defaultScoringForType, DEFAULT_LOG_STEP, habitTypeHasConfigStep } from '$lib/habits/defaults';
 	import {
 		ALL_DAYS,
 		daysToPreset,
@@ -10,6 +10,7 @@
 		weekdayLabel
 	} from '$lib/habits/schedule';
 	import { archiveHabit, habitTypeLabel, updateHabit } from '$lib/habits/service';
+	import { getDayStore } from '$lib/habits/day.svelte';
 	import { createClient } from '$lib/supabase/client';
 	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 
@@ -34,6 +35,7 @@
 	let targetTime = $state((habit.target_time ?? '06:00:00').slice(0, 5));
 	let graceMinutes = $state(habit.grace_minutes);
 	let falloffMinutes = $state(habit.falloff_minutes_per_10_percent);
+	let logStep = $state(habit.log_step ?? DEFAULT_LOG_STEP);
 
 	let anchorTime = $state(habit.anchor_time?.slice(0, 5) ?? '');
 	let isAnytime = $state(habit.anchor_time == null);
@@ -80,7 +82,7 @@
 				schedulePreset === 'custom' ? customDays : undefined
 			);
 
-			await updateHabit(supabase, user.id, habit.id, {
+			const updated = await updateHabit(supabase, user.id, habit.id, {
 				name: name.trim(),
 				active_days: activeDays,
 				allow_skip: allowSkip,
@@ -91,10 +93,12 @@
 				target_time: habit.type === 'do_on_time' ? `${targetTime}:00` : null,
 				grace_minutes: habit.type === 'do_on_time' ? graceMinutes : scoring.grace_minutes,
 				falloff_minutes_per_10_percent:
-					habit.type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent
+					habit.type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent,
+				log_step: hasConfigStep ? logStep : undefined
 			});
 
-			await goto('/today');
+			getDayStore().applyHabit(updated);
+			await goto('/today', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not update habit';
 		} finally {
@@ -119,8 +123,9 @@
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error('Not signed in');
 
-			await archiveHabit(supabase, user.id, habit.id);
-			await goto('/today');
+			const archived = await archiveHabit(supabase, user.id, habit.id);
+			getDayStore().applyHabit(archived);
+			await goto('/today', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not delete habit';
 		} finally {
@@ -233,6 +238,8 @@
 					placeholder="min, pages, km"
 					class={inputClass}
 				/>
+				<label for="log-step" class="text-sm text-subtext-1">Log step (+/− increment)</label>
+				<input id="log-step" type="number" min="1" bind:value={logStep} class={inputClass} />
 			{:else if habit.type === 'do_on_time'}
 				<label for="target-time" class="text-sm text-subtext-1">Target time</label>
 				<input id="target-time" type="time" bind:value={targetTime} class={inputClass} />
@@ -242,6 +249,8 @@
 					>Minutes late for each 10% drop (after grace)</label
 				>
 				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} class={inputClass} />
+				<label for="log-step-time" class="text-sm text-subtext-1">Log step (+/− increment in minutes)</label>
+				<input id="log-step-time" type="number" min="1" bind:value={logStep} class={inputClass} />
 			{:else if habit.type === 'do_binary'}
 				<p class="m-0 text-sm text-subtext-0">
 					Log Yes or No each day — 100% or 0% adherence.

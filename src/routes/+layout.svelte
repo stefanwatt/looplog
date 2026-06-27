@@ -1,23 +1,85 @@
 <script lang="ts">
 	import './layout.css';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { browser } from '$app/environment';
 	import CreateHabitButton from '$lib/components/CreateHabitButton.svelte';
+	import AnytimeTab from '$lib/components/tabs/AnytimeTab.svelte';
+	import NextTab from '$lib/components/tabs/NextTab.svelte';
+	import TodayTab from '$lib/components/tabs/TodayTab.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { startDayRealtime, stopDayRealtime } from '$lib/habits/day-realtime';
+	import { getDayStore } from '$lib/habits/day.svelte';
 	import { mdiCalendarClock, mdiCalendarToday, mdiPlayCircle } from '@mdi/js';
 
 	const tabs = [
 		{ href: '/anytime', label: 'Anytime', icon: mdiCalendarClock },
 		{ href: '/next', label: 'Next', icon: mdiPlayCircle },
 		{ href: '/today', label: 'Today', icon: mdiCalendarToday }
-	];
+	] as const;
 
-	let { children } = $props();
+	const tabPaths = new Set<string>(tabs.map((tab) => tab.href));
+
+	let { children, data } = $props();
 
 	const showNav = $derived(!page.url.pathname.startsWith('/auth'));
+	const isTabRoute = $derived(tabPaths.has(page.url.pathname));
+	const day = getDayStore();
+
+	if (data.user && data.day) {
+		if (!day.ready) {
+			day.init(data.user.id, data.day);
+		}
+	} else if (day.ready) {
+		day.reset();
+	}
+
+	$effect(() => {
+		if (!browser) return;
+
+		if (!data.user) {
+			stopDayRealtime();
+			return;
+		}
+
+		startDayRealtime(data.user.id);
+	});
+
+	function navigateTab(href: (typeof tabs)[number]['href'], event: MouseEvent) {
+		if (
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey ||
+			event.button !== 0
+		) {
+			return;
+		}
+
+		event.preventDefault();
+
+		if (page.url.pathname === href && page.url.search === '') return;
+
+		void goto(href, { invalidateAll: false, keepFocus: true, noScroll: true });
+	}
 </script>
 
 <div class="flex min-h-dvh flex-col bg-base font-sans text-text">
-	<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-[5.5rem]">{@render children()}</main>
+	<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-[5.5rem]">
+		{#if isTabRoute}
+			<div class:hidden={page.url.pathname !== '/anytime'}>
+				<AnytimeTab />
+			</div>
+			<div class:hidden={page.url.pathname !== '/next'}>
+				<NextTab />
+			</div>
+			<div class:hidden={page.url.pathname !== '/today'}>
+				<TodayTab />
+			</div>
+		{:else}
+			{@render children()}
+		{/if}
+	</main>
 
 	{#if showNav}
 		<nav
@@ -28,6 +90,7 @@
 				{#each tabs as tab (tab.href)}
 					<a
 						href={tab.href}
+						onclick={(event) => navigateTab(tab.href, event)}
 						class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname ===
 						tab.href
 							? 'text-blue'

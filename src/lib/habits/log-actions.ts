@@ -1,4 +1,4 @@
-import { invalidateAll } from '$app/navigation';
+import { getDayStore } from '$lib/habits/day.svelte';
 import type { Habit } from '$lib/database.types';
 import { upsertLog } from '$lib/habits/service';
 import { createClient } from '$lib/supabase/client';
@@ -10,7 +10,7 @@ export type HabitLogPayload = {
 };
 
 export type LogActionOptions = {
-	invalidate?: boolean;
+	updateStore?: boolean;
 };
 
 async function getAuthenticatedClient() {
@@ -29,23 +29,29 @@ export async function logHabit(
 	options: LogActionOptions = {}
 ) {
 	const { supabase, user } = await getAuthenticatedClient();
-	await upsertLog(supabase, user.id, habit, dateKey, {
+	const log = await upsertLog(supabase, user.id, habit, dateKey, {
 		status: 'logged',
 		actualValue: payload.actualValue,
 		actualTime: payload.actualTime,
 		satisfaction: payload.satisfaction
 	});
-	if (options.invalidate !== false) {
-		await invalidateAll();
+
+	if (options.updateStore !== false) {
+		getDayStore().applyLog(log);
 	}
+
+	return log;
 }
 
 export async function skipHabit(habit: Habit, dateKey: string, options: LogActionOptions = {}) {
 	const { supabase, user } = await getAuthenticatedClient();
-	await upsertLog(supabase, user.id, habit, dateKey, { status: 'skipped' });
-	if (options.invalidate !== false) {
-		await invalidateAll();
+	const log = await upsertLog(supabase, user.id, habit, dateKey, { status: 'skipped' });
+
+	if (options.updateStore !== false) {
+		getDayStore().applyLog(log);
 	}
+
+	return log;
 }
 
 export async function resetHabitLog(
@@ -62,7 +68,8 @@ export async function resetHabitLog(
 		.eq('log_date', dateKey);
 
 	if (error) throw error;
-	if (options.invalidate !== false) {
-		await invalidateAll();
+
+	if (options.updateStore !== false) {
+		getDayStore().removeLog(habitId, dateKey);
 	}
 }

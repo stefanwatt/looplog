@@ -2,7 +2,9 @@
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { HabitType } from '$lib/database.types';
+	import { getDayStore } from '$lib/habits/day.svelte';
 	import {
+		DEFAULT_LOG_STEP,
 		DEFAULT_MAX_SKIPS,
 		defaultScoringForType,
 		habitTypeHasConfigStep
@@ -36,6 +38,7 @@
 	let targetTime = $state('06:00');
 	let graceMinutes = $state(5);
 	let falloffMinutes = $state(6);
+	let logStep = $state(DEFAULT_LOG_STEP);
 
 	let anchorTime = $state('');
 	let isAnytime = $state(false);
@@ -83,7 +86,7 @@
 				schedulePreset === 'custom' ? customDays : undefined
 			);
 
-			await createHabit(supabase, user.id, {
+			const habit = await createHabit(supabase, user.id, {
 				name: name.trim(),
 				type,
 				active_days: activeDays,
@@ -95,10 +98,12 @@
 				target_time: type === 'do_on_time' ? `${targetTime}:00` : null,
 				grace_minutes: type === 'do_on_time' ? graceMinutes : scoring.grace_minutes,
 				falloff_minutes_per_10_percent:
-					type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent
+					type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent,
+				log_step: hasConfigStep ? logStep : undefined
 			});
 
-			await goto('/next');
+			getDayStore().applyHabit(habit);
+			await goto('/next', { invalidateAll: false });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not create habit';
 		} finally {
@@ -220,6 +225,8 @@
 					placeholder="min, pages, km"
 					class={inputClass}
 				/>
+				<label for="log-step" class="text-sm text-subtext-1">Log step (+/− increment)</label>
+				<input id="log-step" type="number" min="1" bind:value={logStep} class={inputClass} />
 			{:else if type === 'do_on_time'}
 				<label for="target-time" class="text-sm text-subtext-1">Target time</label>
 				<input id="target-time" type="time" bind:value={targetTime} class={inputClass} />
@@ -229,6 +236,8 @@
 					>Minutes late for each 10% drop (after grace)</label
 				>
 				<input id="falloff" type="number" min="1" bind:value={falloffMinutes} class={inputClass} />
+				<label for="log-step-time" class="text-sm text-subtext-1">Log step (+/− increment in minutes)</label>
+				<input id="log-step-time" type="number" min="1" bind:value={logStep} class={inputClass} />
 			{:else if type === 'do_binary'}
 				<p class="m-0 text-sm text-subtext-0">
 					Log Yes or No each day — 100% or 0% adherence.

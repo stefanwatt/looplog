@@ -29,8 +29,6 @@
 		undoAvailable?: boolean;
 	} = $props();
 
-	const noInvalidate = { invalidate: false as const };
-
 	let dismissedIds = new SvelteSet<string>();
 	let doneDelta = $state(0);
 	let error = $state('');
@@ -59,7 +57,7 @@
 
 	function handleLog(habit: HabitWithLog, payload: HabitLogPayload) {
 		dismiss(habit.id);
-		void logHabit(habit, dateKey, payload, noInvalidate).catch((err) => {
+		void logHabit(habit, dateKey, payload).catch((err) => {
 			restore(habit.id);
 			error = err instanceof Error ? err.message : 'Could not save log';
 		});
@@ -67,7 +65,7 @@
 
 	function handleSkip(habit: HabitWithLog) {
 		dismiss(habit.id);
-		void skipHabit(habit, dateKey, noInvalidate).catch((err) => {
+		void skipHabit(habit, dateKey).catch((err) => {
 			restore(habit.id);
 			error = err instanceof Error ? err.message : 'Could not skip habit';
 		});
@@ -75,7 +73,7 @@
 
 	function handleUndo(habit: HabitWithLog) {
 		restore(habit.id);
-		void resetHabitLog(habit.id, dateKey, noInvalidate).catch((err) => {
+		void resetHabitLog(habit.id, dateKey).catch((err) => {
 			dismiss(habit.id);
 			error = err instanceof Error ? err.message : 'Could not undo log';
 		});

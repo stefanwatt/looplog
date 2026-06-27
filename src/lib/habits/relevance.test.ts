@@ -23,6 +23,7 @@ function habit(id: string, name: string, anchorTime: string): HabitWithLog {
 		target_time: null,
 		grace_minutes: 0,
 		falloff_minutes_per_10_percent: 10,
+		log_step: 5,
 		archived_at: null,
 		created_at: '',
 		updated_at: '',
