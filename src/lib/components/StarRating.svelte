@@ -2,11 +2,14 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { mdiStar, mdiStarOutline } from '@mdi/js';
 
-	let { value = $bindable<number | null>(null), disabled = false, onselect }: {
+	let { value = $bindable<number | null>(null), disabled = false, inverted = false, onselect }: {
 		value?: number | null;
 		disabled?: boolean;
+		inverted?: boolean;
 		onselect?: () => void;
 	} = $props();
+
+	const emptyStarClass = $derived(inverted ? 'text-base/55' : 'text-surface-2');
 </script>
 
 <div class="flex justify-center gap-1.5" role="radiogroup" aria-label="Satisfaction">
@@ -15,7 +18,7 @@
 			type="button"
 			class="border-0 bg-transparent p-0.5 {value != null && star <= value
 				? 'text-yellow'
-				: 'text-surface-2'}"
+				: emptyStarClass}"
 			aria-label="{star} star"
 			aria-pressed={value != null && star <= value}
 			{disabled}

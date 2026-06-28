@@ -355,17 +355,19 @@
 		/>
 	{/if}
 
-	<div class="shrink-0 px-5 pt-4 pb-2">
+	<div class="shrink-0 bg-text px-5 pt-4 pb-3 text-base">
 		<div class="flex min-w-0 items-center justify-between gap-3">
 			<h2 class="m-0 min-w-0 truncate text-xl font-bold sm:text-2xl">{habit.name}</h2>
 			<div class="flex shrink-0 items-center gap-2">
 				{#if habitTargetLabel}
-					<span class="text-sm font-semibold text-blue tabular-nums">{habitTargetLabel}</span>
+					<span class="text-sm font-semibold text-inverted-accent tabular-nums"
+						>{habitTargetLabel}</span
+					>
 				{/if}
 				{#if showEdit}
 					<a
 						href="/habits/{habit.id}/edit"
-						class="grid place-items-center rounded-lg p-1.5 text-subtext-0 no-underline"
+						class="grid place-items-center rounded-lg p-1.5 text-base/70 no-underline hover:text-base"
 						aria-label="Edit {habit.name}"
 						onpointerdown={(event) => event.stopPropagation()}
 					>
@@ -380,7 +382,7 @@
 		class="flex min-h-0 flex-col justify-center px-5 {fillHeight ? 'flex-1' : 'shrink-0 py-2'}"
 	>
 		<div
-			class="relative w-full shrink-0 overflow-hidden bg-surface-0/15 {CARD_IMAGE_HEIGHT_CLASS}"
+			class="relative w-full shrink-0 overflow-hidden {CARD_IMAGE_HEIGHT_CLASS}"
 			aria-hidden="true"
 		>
 			<img
@@ -391,26 +393,24 @@
 		</div>
 	</div>
 
-	<div class="shrink-0 px-5 pt-2 pb-4">
+	<div class="shrink-0 bg-text px-5 pt-3 pb-4 text-base">
 		{#snippet adherenceScore()}
 			{#if previewScore != null}
-				<span class="text-[1rem] font-bold leading-none text-text tabular-nums"
-					>{previewScore}%</span
-				>
+				<span class="text-[1rem] font-bold leading-none tabular-nums">{previewScore}%</span>
 			{/if}
 		{/snippet}
 
 		{#snippet adherenceEmoji()}
 			{#if previewScore != null}
-				<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-subtext-0" />
+				<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-base/70" />
 			{/if}
 		{/snippet}
 
 		{#snippet adherenceIndicator()}
 			{#if previewScore != null}
-				<div class="flex shrink-0 items-center gap-0.5 text-[1rem] leading-none text-text">
+				<div class="flex shrink-0 items-center gap-0.5 text-[1rem] leading-none">
 					<span class="font-bold tabular-nums">{previewScore}%</span>
-					<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-subtext-0" />
+					<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-base/70" />
 				</div>
 			{/if}
 		{/snippet}
@@ -424,6 +424,7 @@
 				quickOptions={targetQuickOptions}
 				formatDisplay={(value) => String(value)}
 				disabled={busy}
+				inverted
 				ariaLabel="Actual amount for {habit.name}"
 				onselect={markTouched}
 				controlsLeading={previewScore != null ? adherenceScore : undefined}
@@ -439,6 +440,7 @@
 				quickOptions={timeQuickOptions}
 				formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
 				disabled={busy}
+				inverted
 				ariaLabel="Actual time for {habit.name}"
 				onselect={syncActualTimeFromMinutes}
 				controlsLeading={previewScore != null ? adherenceScore : undefined}
@@ -446,13 +448,13 @@
 			/>
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
 			<div class="flex items-center justify-between gap-3">
-				<StarRating bind:value={satisfaction} disabled={busy} onselect={markTouched} />
+				<StarRating bind:value={satisfaction} disabled={busy} inverted onselect={markTouched} />
 				{@render adherenceIndicator()}
 			</div>
 		{:else if habit.type === 'do_binary'}
 			<div class="flex flex-col items-center gap-1.5 py-2 text-center">
 				<p class="m-0 text-lg font-semibold">Did you do it today?</p>
-				<p class="m-0 text-sm text-subtext-0">{binaryContextLabel}</p>
+				<p class="m-0 text-sm text-base/70">{binaryContextLabel}</p>
 			</div>
 		{/if}
 	</div>

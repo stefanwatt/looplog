@@ -13,6 +13,7 @@
 		quickOptions,
 		formatDisplay,
 		disabled = false,
+		inverted = false,
 		ariaLabel,
 		onselect,
 		controlsLeading,
@@ -26,6 +27,7 @@
 		quickOptions: QuickOption[];
 		formatDisplay: (value: number) => string;
 		disabled?: boolean;
+		inverted?: boolean;
 		ariaLabel: string;
 		onselect?: () => void;
 		controlsLeading?: Snippet;
@@ -62,10 +64,26 @@
 		event.stopPropagation();
 	}
 
-	const quickButtonClass =
-		'flex min-w-0 flex-1 items-center justify-center rounded-lg border border-surface-0/60 bg-surface-0/30 px-0.5 py-1.5 text-[10px] font-medium leading-none text-text transition enabled:active:scale-95 disabled:opacity-40';
-	const stepButtonClass =
-		'grid size-8 shrink-0 place-items-center rounded-full border border-surface-0/60 bg-surface-0/40 text-text transition enabled:active:scale-95 disabled:opacity-40';
+	const quickButtonClass = $derived(
+		inverted
+			? 'flex min-w-0 flex-1 items-center justify-center rounded-lg border border-inverted-control-border bg-inverted-control-bg px-0.5 py-1.5 text-[10px] font-medium leading-none text-base transition enabled:active:scale-95 disabled:opacity-40'
+			: 'flex min-w-0 flex-1 items-center justify-center rounded-lg border border-surface-0/60 bg-surface-0/30 px-0.5 py-1.5 text-[10px] font-medium leading-none text-text transition enabled:active:scale-95 disabled:opacity-40'
+	);
+	const quickButtonSelectedClass = $derived(
+		inverted
+			? 'border-inverted-accent bg-inverted-control-selected-bg text-inverted-accent'
+			: 'border-blue bg-blue/15 text-blue'
+	);
+	const stepButtonClass = $derived(
+		inverted
+			? 'grid size-8 shrink-0 place-items-center rounded-full border border-inverted-control-border bg-inverted-control-bg-strong text-base transition enabled:active:scale-95 disabled:opacity-40'
+			: 'grid size-8 shrink-0 place-items-center rounded-full border border-surface-0/60 bg-surface-0/40 text-text transition enabled:active:scale-95 disabled:opacity-40'
+	);
+	const valueTextClass = $derived(
+		inverted
+			? 'm-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-base tabular-nums'
+			: 'm-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-text tabular-nums'
+	);
 </script>
 
 <div class="grid gap-2" role="group" aria-label={ariaLabel} onpointerdown={stopSwipe}>
@@ -74,7 +92,7 @@
 			{#each quickOptions as option (option.value)}
 				<button
 					type="button"
-					class="{quickButtonClass} {value === option.value ? 'border-blue bg-blue/15 text-blue' : ''}"
+					class="{quickButtonClass} {value === option.value ? quickButtonSelectedClass : ''}"
 					{disabled}
 					aria-label={option.label}
 					aria-pressed={value === option.value}
@@ -115,7 +133,7 @@
 					<Icon path={mdiMinus} size={16} />
 				</button>
 
-				<p class="m-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-text tabular-nums">
+				<p class={valueTextClass}>
 					{displayText}
 				</p>
 

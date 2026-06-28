@@ -33,6 +33,11 @@
 	--ctp-base: #eff1f5;
 	--ctp-mantle: #e6e9ef;
 	--ctp-crust: #dce0e8;
+	--ctp-inverted-accent: #89dceb;
+	--ctp-inverted-control-border: color-mix(in srgb, var(--ctp-base) 65%, transparent);
+	--ctp-inverted-control-bg: color-mix(in srgb, var(--ctp-base) 28%, transparent);
+	--ctp-inverted-control-bg-strong: color-mix(in srgb, var(--ctp-base) 38%, transparent);
+	--ctp-inverted-control-selected-bg: color-mix(in srgb, var(--ctp-inverted-accent) 32%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -63,6 +68,11 @@
 		--ctp-base: #1e1e2e;
 		--ctp-mantle: #181825;
 		--ctp-crust: #11111b;
+		--ctp-inverted-accent: #1e66f5;
+		--ctp-inverted-control-border: color-mix(in srgb, var(--ctp-base) 55%, transparent);
+		--ctp-inverted-control-bg: color-mix(in srgb, var(--ctp-base) 22%, transparent);
+		--ctp-inverted-control-bg-strong: color-mix(in srgb, var(--ctp-base) 30%, transparent);
+		--ctp-inverted-control-selected-bg: color-mix(in srgb, var(--ctp-inverted-accent) 28%, transparent);
 	}
 }
 
@@ -96,6 +106,11 @@
 	--color-base: var(--ctp-base);
 	--color-mantle: var(--ctp-mantle);
 	--color-crust: var(--ctp-crust);
+	--color-inverted-accent: var(--ctp-inverted-accent);
+	--color-inverted-control-border: var(--ctp-inverted-control-border);
+	--color-inverted-control-bg: var(--ctp-inverted-control-bg);
+	--color-inverted-control-bg-strong: var(--ctp-inverted-control-bg-strong);
+	--color-inverted-control-selected-bg: var(--ctp-inverted-control-selected-bg);
 }
 
 * {
