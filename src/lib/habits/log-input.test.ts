@@ -30,8 +30,8 @@ describe('log-input', () => {
 
 	test('quickTimeOptions includes on-time and now with compact labels', () => {
 		const options = quickTimeOptions('06:00', 5, 10, 6 * 60 + 12);
-		expect(options.some((option) => option.label === 'Exact')).toBe(true);
-		expect(options.some((option) => option.label === 'Now')).toBe(true);
+		expect(options.some((option) => option.icon === 'exact')).toBe(true);
+		expect(options.some((option) => option.icon === 'now')).toBe(true);
 		expect(options.length).toBeLessThanOrEqual(5);
 	});
 

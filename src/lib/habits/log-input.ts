@@ -12,10 +12,15 @@ export function minutesToTimeString(minutes: number): string {
 	return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
+export type QuickOptionIcon = 'exact' | 'now';
+
 export type QuickOption = {
 	value: number;
 	label: string;
+	icon?: QuickOptionIcon;
 };
+
+const MAX_QUICK_OPTIONS = 5;
 
 function niceStepForTarget(target: number): number {
 	const ideal = target / 5;
@@ -36,7 +41,7 @@ export function quickTargetOptions(target: number): QuickOption[] {
 	const step = niceStepForTarget(target);
 	const options: QuickOption[] = [];
 
-	for (let multiplier = 1; multiplier <= 5; multiplier += 1) {
+	for (let multiplier = 1; multiplier <= MAX_QUICK_OPTIONS; multiplier += 1) {
 		const value = multiplier * step;
 		if (value >= target) break;
 		options.push({ value, label: String(value) });
@@ -53,7 +58,7 @@ export function quickTimeOptions(
 ): QuickOption[] {
 	const target = parseTimeToMinutes(targetTime);
 	const candidates = [
-		{ offset: 0, label: 'Exact', priority: 0 },
+		{ offset: 0, label: 'Exact', icon: 'exact' as const, priority: 0 },
 		{ offset: step, label: `+${step}m`, priority: 1 },
 		{ offset: -step, label: `−${step}m`, priority: 2 },
 		{ offset: grace, label: `+${grace}m`, priority: 3 },
@@ -68,15 +73,19 @@ export function quickTimeOptions(
 		const minutes = clampDayMinutes(target + candidate.offset);
 		if (seen.has(minutes)) continue;
 		seen.add(minutes);
-		options.push({ value: minutes, label: candidate.label });
-		if (options.length >= 5) break;
+		options.push({
+			value: minutes,
+			label: candidate.label,
+			icon: candidate.icon
+		});
+		if (options.length >= MAX_QUICK_OPTIONS) break;
 	}
 
 	if (nowMinutes != null) {
 		const minutes = clampDayMinutes(nowMinutes);
 		if (!seen.has(minutes)) {
-			if (options.length >= 5) options.pop();
-			options.push({ value: minutes, label: 'Now' });
+			if (options.length >= MAX_QUICK_OPTIONS) options.pop();
+			options.push({ value: minutes, label: 'Now', icon: 'now' });
 		}
 	}
 

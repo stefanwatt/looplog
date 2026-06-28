@@ -167,13 +167,13 @@
 			: []
 	);
 
-	const habitMeta = $derived.by(() => {
+	const habitTargetLabel = $derived.by(() => {
 		if (habit.type === 'do_target' && habit.target_value != null) {
-			return `Target ${habit.target_value} ${habit.target_unit}`;
+			return `${habit.target_value} ${habit.target_unit}`;
 		}
 
 		if (habit.type === 'do_on_time' && habit.target_time) {
-			return `Target ${formatTimeLabel(habit.target_time)}`;
+			return formatTimeLabel(habit.target_time);
 		}
 
 		return null;
@@ -280,13 +280,11 @@
 	{/if}
 
 	<div class="shrink-0 px-5 pt-4 pb-2">
-		<div class="flex min-w-0 items-baseline justify-between gap-3">
+		<div class="flex min-w-0 items-center justify-between gap-3">
 			<h2 class="m-0 min-w-0 truncate text-xl font-bold sm:text-2xl">{habit.name}</h2>
 			<div class="flex shrink-0 items-center gap-2">
-				{#if habit.anchor_time}
-					<span class="text-sm font-semibold text-blue tabular-nums">
-						{formatTimeLabel(habit.anchor_time)}
-					</span>
+				{#if habitTargetLabel}
+					<span class="text-sm font-semibold text-blue tabular-nums">{habitTargetLabel}</span>
 				{/if}
 				{#if showEdit}
 					<a
@@ -300,9 +298,6 @@
 				{/if}
 			</div>
 		</div>
-		{#if habitMeta}
-			<p class="m-0 mt-1 text-sm text-subtext-1">{habitMeta}</p>
-		{/if}
 	</div>
 
 	<div

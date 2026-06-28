@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
-	import { defaultScoringForType, DEFAULT_LOG_STEP, habitTypeHasConfigStep } from '$lib/habits/defaults';
+	import { defaultScoringForType, DEFAULT_LOG_STEP, habitTypeHasAnchorStep, habitTypeHasConfigStep } from '$lib/habits/defaults';
 	import {
 		ALL_DAYS,
 		daysToPreset,
@@ -41,11 +41,20 @@
 	let isAnytime = $state(habit.anchor_time == null);
 
 	const hasConfigStep = habitTypeHasConfigStep(habit.type);
-	const totalSteps = hasConfigStep ? 4 : 3;
+	const hasAnchorStep = habitTypeHasAnchorStep(habit.type);
+	const totalSteps = 2 + (hasConfigStep ? 1 : 0) + (hasAnchorStep ? 1 : 0);
+	const isSaveStep = $derived(step === 4 || (step === 3 && !hasAnchorStep));
+	const displayStep = $derived(
+		step === 4 && !hasConfigStep
+			? totalSteps
+			: step === 3 && hasConfigStep && !hasAnchorStep
+				? totalSteps
+				: step
+	);
 
 	function nextStep() {
 		if (step === 2 && !hasConfigStep) {
-			step = 4;
+			step = hasAnchorStep ? 4 : 3;
 		} else {
 			step = Math.min(4, step + 1);
 		}
@@ -82,15 +91,22 @@
 				schedulePreset === 'custom' ? customDays : undefined
 			);
 
+			const targetTimeValue = `${targetTime}:00`;
+
 			const updated = await updateHabit(supabase, user.id, habit.id, {
 				name: name.trim(),
 				active_days: activeDays,
 				allow_skip: allowSkip,
 				max_consecutive_skips: maxConsecutiveSkips,
-				anchor_time: isAnytime || !anchorTime ? null : `${anchorTime}:00`,
+				anchor_time:
+					habit.type === 'do_on_time'
+						? targetTimeValue
+						: isAnytime || !anchorTime
+							? null
+							: `${anchorTime}:00`,
 				target_value: habit.type === 'do_target' ? targetValue : null,
 				target_unit: habit.type === 'do_target' ? targetUnit : null,
-				target_time: habit.type === 'do_on_time' ? `${targetTime}:00` : null,
+				target_time: habit.type === 'do_on_time' ? targetTimeValue : null,
 				grace_minutes: habit.type === 'do_on_time' ? graceMinutes : scoring.grace_minutes,
 				falloff_minutes_per_10_percent:
 					habit.type === 'do_on_time' ? falloffMinutes : scoring.falloff_minutes_per_10_percent,
@@ -149,7 +165,7 @@
 		</a>
 		<h1 class="mt-2 mb-0.5 text-2xl font-bold">Edit habit</h1>
 		<p class="m-0 text-subtext-0">
-			Step {step === 4 && !hasConfigStep ? 3 : step} of {totalSteps} · {habitTypeLabel(habit.type)}
+			Step {displayStep} of {totalSteps} · {habitTypeLabel(habit.type)}
 		</p>
 	</header>
 
@@ -261,7 +277,7 @@
 				</p>
 			{/if}
 		</div>
-	{:else}
+	{:else if hasAnchorStep}
 		<div class="grid gap-3 rounded-2xl bg-surface-0/40 p-4">
 			<label class="flex items-center gap-2">
 				<input type="checkbox" bind:checked={isAnytime} />
@@ -289,7 +305,7 @@
 				Back
 			</button>
 		{/if}
-		{#if step < 4}
+		{#if step < 4 && !isSaveStep}
 			<button
 				type="button"
 				class="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-white disabled:opacity-60"
@@ -303,7 +319,7 @@
 			<button
 				type="button"
 				class="flex-1 rounded-xl border-0 bg-blue py-3.5 font-semibold text-white disabled:opacity-60"
-				disabled={saving || deleting || !name.trim() || (!isAnytime && !anchorTime)}
+				disabled={saving || deleting || !name.trim() || (hasAnchorStep && !isAnytime && !anchorTime)}
 				onclick={saveHabit}
 			>
 				{saving ? 'Saving…' : 'Save changes'}

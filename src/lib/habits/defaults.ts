@@ -9,6 +9,10 @@ export function habitTypeHasConfigStep(type: HabitType): boolean {
 	return type === 'do_target' || type === 'do_on_time';
 }
 
+export function habitTypeHasAnchorStep(type: HabitType): boolean {
+	return type !== 'do_on_time';
+}
+
 export function defaultScoringForType(type: HabitType) {
 	switch (type) {
 		case 'do_target':
