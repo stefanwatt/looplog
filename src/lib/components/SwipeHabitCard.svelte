@@ -24,6 +24,7 @@
 		CARD_ACTION_STAMPS,
 		CARD_SWIPE_ACTION_THRESHOLD_PX,
 		CARD_SWIPE_PREVIEW_START_PX,
+		cardDragTransform,
 		swipePreviewOpacity,
 		type CardActionStampType
 	} from '$lib/habits/card-action-animation';
@@ -76,6 +77,7 @@
 	} = $props();
 
 	let startX = $state(0);
+	let settling = $state(false);
 	let actualTimeMinutes = $state<number | null>(null);
 
 	$effect(() => {
@@ -179,8 +181,9 @@
 		return null;
 	});
 
-	const transform = $derived(`translateX(${dragX}px) rotate(${dragX * 0.04}deg)`);
+	const transform = $derived(cardDragTransform(dragX));
 	const transformTransition = $derived(!dragging ? 'transform 200ms ease-out' : 'none');
+	const promoteLayer = $derived(dragging || dragX !== 0 || settling);
 
 	const failurePreviewProgress = $derived(
 		interactive && dragging && !stamp && dragX < -CARD_SWIPE_PREVIEW_START_PX
@@ -195,8 +198,14 @@
 	);
 
 	function resetDrag() {
+		if (dragX !== 0) settling = true;
 		dragX = 0;
 		dragging = false;
+	}
+
+	function onTransformTransitionEnd(event: TransitionEvent) {
+		if (event.propertyName !== 'transform') return;
+		settling = false;
 	}
 
 	function markTouched() {
@@ -210,6 +219,7 @@
 
 	function onPointerDown(event: PointerEvent) {
 		if (!interactive || busy) return;
+		settling = false;
 		dragging = true;
 		startX = event.clientX;
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -248,8 +258,10 @@
 	aria-label="{habit.name} logging card"
 	style:transform
 	style:transition={transformTransition}
+	style:will-change={promoteLayer ? 'transform' : undefined}
 	style:touch-action={interactive ? 'pan-y' : undefined}
 	onpointerdown={interactive ? onPointerDown : undefined}
+	ontransitionend={interactive ? onTransformTransitionEnd : undefined}
 	onpointermove={interactive ? onPointerMove : undefined}
 	onpointerup={interactive ? onPointerUp : undefined}
 	onpointercancel={interactive ? onPointerUp : undefined}

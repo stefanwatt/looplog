@@ -34,3 +34,23 @@ export const CARD_ACTION_STAMPS: Record<CardActionStampType, CardActionStampConf
 export function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export function prefersSimpleCardMotion(): boolean {
+	if (typeof matchMedia === 'undefined') return false;
+	return matchMedia('(pointer: coarse)').matches;
+}
+
+/** GPU-composited drag transform; skips rotation on touch devices. */
+export function cardDragTransform(dragX: number): string {
+	const x = Math.round(dragX);
+	if (prefersSimpleCardMotion()) {
+		return `translate3d(${x}px, 0, 0)`;
+	}
+	return `translate3d(${x}px, 0, 0) rotate(${dragX * 0.04}deg)`;
+}
+
+/** GPU-composited stack layer transform for cards behind the active card. */
+export function cardStackBehindTransform(translateY: number, scale: number): string {
+	const y = Math.round(translateY);
+	return `translate3d(0, ${y}px, 0) scale(${scale})`;
+}

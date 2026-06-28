@@ -19,6 +19,7 @@
 		CARD_EXIT_SWIPE_PX,
 		CARD_SWIPE_ACTION_THRESHOLD_PX,
 		CARD_STAMP_HOLD_MS,
+		cardStackBehindTransform,
 		type CardActionStampType,
 		wait
 	} from '$lib/habits/card-action-animation';
@@ -119,8 +120,10 @@
 		const effectiveDepth = depth - progress;
 		const translateY = effectiveDepth * PEEK_PX;
 		const scale = 1 - effectiveDepth * SCALE_STEP;
-		return `translateY(${translateY}px) scale(${scale})`;
+		return cardStackBehindTransform(translateY, scale);
 	}
+
+	const promoteBehindLayers = $derived(dragging || animating || dragProgress > 0);
 
 	function snapshotForm(): HabitCardForm {
 		return {
@@ -233,6 +236,7 @@
 						style:transform={behindTransform(depth, dragProgress)}
 						style:z-index={10 - depth}
 						style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
+						style:will-change={promoteBehindLayers ? 'transform' : undefined}
 					>
 						<SwipeHabitCard
 							habit={habit}
