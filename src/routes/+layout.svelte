@@ -27,7 +27,6 @@
 
 	const showNav = $derived(!page.url.pathname.startsWith('/auth'));
 	const isTabRoute = $derived(tabPaths.has(page.url.pathname));
-	const isStatsDetailRoute = $derived(page.url.pathname.startsWith('/stats/'));
 	const day = getDayStore();
 	const stats = getStatsStore();
 
@@ -91,22 +90,33 @@
 	}
 </script>
 
-<div class="flex min-h-dvh flex-col bg-base font-sans text-text">
-	<main class="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-[5.5rem]">
+<div class="flex h-dvh flex-col overflow-hidden bg-base font-sans text-text">
+	<main
+		class="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-[5.5rem]"
+	>
 		{#if isTabRoute}
-			<div class:hidden={page.url.pathname !== '/focus'}>
+			<div
+				class="flex min-h-0 flex-1 flex-col overflow-hidden"
+				class:hidden={page.url.pathname !== '/focus'}
+			>
 				<FocusTab />
 			</div>
-			<div class:hidden={page.url.pathname !== '/day'}>
+			<div
+				class="flex min-h-0 flex-1 flex-col overflow-hidden"
+				class:hidden={page.url.pathname !== '/day'}
+			>
 				<DayTab />
 			</div>
-			<div class:hidden={page.url.pathname !== '/stats'}>
+			<div
+				class="flex min-h-0 flex-1 flex-col overflow-hidden"
+				class:hidden={page.url.pathname !== '/stats'}
+			>
 				<StatsTab />
 			</div>
-		{:else if isStatsDetailRoute}
-			{@render children()}
 		{:else}
-			{@render children()}
+			<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+				{@render children()}
+			</div>
 		{/if}
 	</main>
 

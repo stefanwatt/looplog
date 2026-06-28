@@ -53,8 +53,8 @@
 	<title>Day · Looplog</title>
 </svelte:head>
 
-<section>
-	<header class="mb-4">
+<section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+	<header class="mb-4 shrink-0">
 		<div class="flex items-center justify-between gap-4">
 			<h1 class="m-0 text-2xl font-bold">Day</h1>
 			<div class="flex items-center gap-3 text-sm text-subtext-1">
@@ -83,6 +83,7 @@
 		</div>
 	</header>
 
+	<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
 	{#if showTimed}
 		{#if showTimedHeading}
 			<h2 class="mt-0 mb-3 text-sm font-semibold tracking-wide text-subtext-0 uppercase">Timed</h2>
@@ -138,4 +139,5 @@
 			<a href="/habits/new" class="text-blue">Create one</a>
 		</div>
 	{/if}
+	</div>
 </section>

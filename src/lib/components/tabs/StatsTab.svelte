@@ -59,12 +59,16 @@
 	<title>Stats · Looplog</title>
 </svelte:head>
 
-<section style="view-transition-name: stats-page">
-	<header class="mb-4">
+<section
+	class="flex min-h-0 flex-1 flex-col overflow-hidden"
+	style="view-transition-name: stats-page"
+>
+	<header class="mb-4 shrink-0">
 		<h1 class="m-0 text-2xl font-bold">Stats</h1>
 		<p class="mt-1 mb-0 text-sm text-subtext-0">Adherence overview</p>
 	</header>
 
+	<div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
 	{#if stats.loading && !stats.snapshot}
 		<div class="rounded-2xl bg-surface-0/40 px-4 py-10 text-center text-subtext-0">Loading stats…</div>
 	{:else if stats.error}
@@ -192,4 +196,5 @@
 			</section>
 		</div>
 	{/if}
+	</div>
 </section>

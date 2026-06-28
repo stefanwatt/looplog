@@ -64,12 +64,14 @@
 	<title>Focus · Looplog</title>
 </svelte:head>
 
-<section class="flex h-[calc(100dvh-5.5rem-1rem)] flex-col overflow-hidden">
+<section class="flex min-h-0 flex-1 flex-col overflow-hidden">
 	<header class="shrink-0">
-		<h1 class="m-0 text-2xl font-bold">Focus</h1>
-		<p class="mt-1 mb-3 text-subtext-0">
-			{doneCount} / {stack.totalCount} {progressLabel}
-		</p>
+		<div class="mb-3 flex items-baseline justify-between gap-3">
+			<h1 class="m-0 text-2xl font-bold">Focus</h1>
+			<p class="m-0 text-subtext-0">
+				{doneCount} / {stack.totalCount} {progressLabel}
+			</p>
+		</div>
 		<div class="mb-3">
 			<HabitFilterToggle value={filter} onchange={setFilter} />
 		</div>
