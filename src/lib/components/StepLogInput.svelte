@@ -15,6 +15,7 @@
 		disabled = false,
 		ariaLabel,
 		onselect,
+		controlsLeading,
 		controlsTrailing
 	}: {
 		value?: number | null;
@@ -27,6 +28,7 @@
 		disabled?: boolean;
 		ariaLabel: string;
 		onselect?: () => void;
+		controlsLeading?: Snippet;
 		controlsTrailing?: Snippet;
 	} = $props();
 
@@ -89,34 +91,50 @@
 	{/if}
 
 	<div class="flex justify-center">
-		<div class="relative flex items-center gap-1">
-			<button
-				type="button"
-				class={stepButtonClass}
-				{disabled}
-				aria-label="Decrease by {step}"
-				onclick={() => adjust(-step)}
-			>
-				<Icon path={mdiMinus} size={16} />
-			</button>
+		<div
+			class="grid w-full max-w-xs items-center gap-1 {controlsLeading || controlsTrailing
+				? 'grid-cols-[1fr_auto_1fr]'
+				: 'grid-cols-1 justify-items-center'}"
+		>
+			{#if controlsLeading || controlsTrailing}
+				<div class="flex justify-end pr-1">
+					{#if controlsLeading}
+						{@render controlsLeading()}
+					{/if}
+				</div>
+			{/if}
 
-			<p class="m-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-text tabular-nums">
-				{displayText}
-			</p>
+			<div class="flex items-center gap-1">
+				<button
+					type="button"
+					class={stepButtonClass}
+					{disabled}
+					aria-label="Decrease by {step}"
+					onclick={() => adjust(-step)}
+				>
+					<Icon path={mdiMinus} size={16} />
+				</button>
 
-			<button
-				type="button"
-				class={stepButtonClass}
-				{disabled}
-				aria-label="Increase by {step}"
-				onclick={() => adjust(step)}
-			>
-				<Icon path={mdiPlus} size={16} />
-			</button>
+				<p class="m-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-text tabular-nums">
+					{displayText}
+				</p>
 
-			{#if controlsTrailing}
-				<div class="absolute top-1/2 left-full ml-1 -translate-y-1/2">
-					{@render controlsTrailing()}
+				<button
+					type="button"
+					class={stepButtonClass}
+					{disabled}
+					aria-label="Increase by {step}"
+					onclick={() => adjust(step)}
+				>
+					<Icon path={mdiPlus} size={16} />
+				</button>
+			</div>
+
+			{#if controlsLeading || controlsTrailing}
+				<div class="flex justify-start pl-1">
+					{#if controlsTrailing}
+						{@render controlsTrailing()}
+					{/if}
 				</div>
 			{/if}
 		</div>

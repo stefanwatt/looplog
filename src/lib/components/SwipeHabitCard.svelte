@@ -394,11 +394,25 @@
 	</div>
 
 	<div class="shrink-0 px-5 pt-2 pb-4">
+		{#snippet adherenceScore()}
+			{#if previewScore != null}
+				<span class="text-[1rem] font-bold leading-none text-text tabular-nums"
+					>{previewScore}%</span
+				>
+			{/if}
+		{/snippet}
+
+		{#snippet adherenceEmoji()}
+			{#if previewScore != null}
+				<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-subtext-0" />
+			{/if}
+		{/snippet}
+
 		{#snippet adherenceIndicator()}
 			{#if previewScore != null}
-				<div class="flex shrink-0 items-center gap-0.5 pl-0.5 text-[1rem] leading-none text-text">
+				<div class="flex shrink-0 items-center gap-0.5 text-[1rem] leading-none text-text">
 					<span class="font-bold tabular-nums">{previewScore}%</span>
-					<Icon path={previewAdherenceIcon(previewScore)} size={16} class="text-subtext-0" />
+					<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-subtext-0" />
 				</div>
 			{/if}
 		{/snippet}
@@ -414,7 +428,8 @@
 				disabled={busy}
 				ariaLabel="Actual amount for {habit.name}"
 				onselect={markTouched}
-				controlsTrailing={adherenceIndicator}
+				controlsLeading={previewScore != null ? adherenceScore : undefined}
+				controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
 			/>
 		{:else if habit.type === 'do_on_time'}
 			<StepLogInput
@@ -428,7 +443,8 @@
 				disabled={busy}
 				ariaLabel="Actual time for {habit.name}"
 				onselect={syncActualTimeFromMinutes}
-				controlsTrailing={adherenceIndicator}
+				controlsLeading={previewScore != null ? adherenceScore : undefined}
+				controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
 			/>
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
 			<div class="flex items-center justify-between gap-3">
