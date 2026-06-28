@@ -193,11 +193,11 @@
 
 	const habitTargetLabel = $derived.by(() => {
 		if (habit.type === 'do_target' && habit.target_value != null) {
-			return `${habit.target_value} ${habit.target_unit}`;
+			return `Target ${habit.target_value} ${habit.target_unit}`;
 		}
 
 		if (habit.type === 'do_on_time' && habit.target_time) {
-			return formatTimeLabel(habit.target_time);
+			return `Target ${formatTimeLabel(habit.target_time)}`;
 		}
 
 		return null;
@@ -396,9 +396,9 @@
 	<div class="shrink-0 px-5 pt-2 pb-4">
 		{#snippet adherenceIndicator()}
 			{#if previewScore != null}
-				<div class="flex shrink-0 items-center gap-1 pl-1 text-lg leading-none">
+				<div class="flex shrink-0 items-center gap-0.5 pl-0.5 text-[1rem] leading-none text-text">
 					<span class="font-bold tabular-nums">{previewScore}%</span>
-					<Icon path={previewAdherenceIcon(previewScore)} size={18} class="text-subtext-0" />
+					<Icon path={previewAdherenceIcon(previewScore)} size={16} class="text-subtext-0" />
 				</div>
 			{/if}
 		{/snippet}
@@ -410,7 +410,7 @@
 				baseline={0}
 				min={0}
 				quickOptions={targetQuickOptions}
-				formatDisplay={(value) => `${value} ${habit.target_unit}`}
+				formatDisplay={(value) => String(value)}
 				disabled={busy}
 				ariaLabel="Actual amount for {habit.name}"
 				onselect={markTouched}

@@ -63,7 +63,7 @@
 	const quickButtonClass =
 		'flex min-w-0 flex-1 items-center justify-center rounded-lg border border-surface-0/60 bg-surface-0/30 px-0.5 py-1.5 text-[10px] font-medium leading-none text-text transition enabled:active:scale-95 disabled:opacity-40';
 	const stepButtonClass =
-		'grid size-9 shrink-0 place-items-center rounded-full border border-surface-0/60 bg-surface-0/40 text-text transition enabled:active:scale-95 disabled:opacity-40';
+		'grid size-8 shrink-0 place-items-center rounded-full border border-surface-0/60 bg-surface-0/40 text-text transition enabled:active:scale-95 disabled:opacity-40';
 </script>
 
 <div class="grid gap-2" role="group" aria-label={ariaLabel} onpointerdown={stopSwipe}>
@@ -89,7 +89,7 @@
 	{/if}
 
 	<div class="flex justify-center">
-		<div class="relative flex items-center gap-2">
+		<div class="relative flex items-center gap-1">
 			<button
 				type="button"
 				class={stepButtonClass}
@@ -97,10 +97,10 @@
 				aria-label="Decrease by {step}"
 				onclick={() => adjust(-step)}
 			>
-				<Icon path={mdiMinus} size={18} />
+				<Icon path={mdiMinus} size={16} />
 			</button>
 
-			<p class="m-0 min-w-20 text-center text-lg font-semibold leading-tight tabular-nums">
+			<p class="m-0 min-w-[2.5rem] text-center text-[1rem] font-semibold leading-tight text-text tabular-nums">
 				{displayText}
 			</p>
 
@@ -111,11 +111,11 @@
 				aria-label="Increase by {step}"
 				onclick={() => adjust(step)}
 			>
-				<Icon path={mdiPlus} size={18} />
+				<Icon path={mdiPlus} size={16} />
 			</button>
 
 			{#if controlsTrailing}
-				<div class="absolute top-1/2 left-full ml-2 -translate-y-1/2">
+				<div class="absolute top-1/2 left-full ml-1 -translate-y-1/2">
 					{@render controlsTrailing()}
 				</div>
 			{/if}
