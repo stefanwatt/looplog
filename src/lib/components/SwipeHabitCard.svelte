@@ -44,6 +44,7 @@
 		fillHeight = false,
 		showEdit = true,
 		illustrationSrc,
+		currentStreak = null,
 		dragX = $bindable(0),
 		dragging = $bindable(false),
 		actualValue = $bindable<number | null>(null),
@@ -67,6 +68,7 @@
 		fillHeight?: boolean;
 		showEdit?: boolean;
 		illustrationSrc?: string;
+		currentStreak?: number | null;
 		dragX?: number;
 		dragging?: boolean;
 		actualValue?: number | null;
@@ -178,6 +180,16 @@
 				)
 			: []
 	);
+
+	const isBinary = $derived(habit.type === 'do_binary');
+
+	const binaryContextLabel = $derived.by(() => {
+		const schedule = habit.anchor_time ? formatTimeLabel(habit.anchor_time) : 'Anytime';
+		if (currentStreak != null && currentStreak > 0) {
+			return `${schedule} · ${currentStreak}-day`;
+		}
+		return schedule;
+	});
 
 	const habitTargetLabel = $derived.by(() => {
 		if (habit.type === 'do_target' && habit.target_value != null) {
@@ -367,18 +379,22 @@
 	</div>
 
 	<div
-		class="relative shrink-0 overflow-hidden bg-surface-0/15 {CARD_IMAGE_HEIGHT_CLASS}"
+		class="relative overflow-hidden bg-surface-0/15 {isBinary && fillHeight
+			? 'min-h-0 flex-1 shrink'
+			: `shrink-0 ${CARD_IMAGE_HEIGHT_CLASS}`}"
 		aria-hidden="true"
 	>
 		<img
 			src={resolvedIllustration}
 			alt=""
-			class="absolute inset-0 h-full w-full object-contain object-center p-4"
+			class="absolute inset-0 h-full w-full object-contain object-center {isBinary && fillHeight
+				? 'p-6 sm:p-8'
+				: 'p-4'}"
 		/>
 	</div>
 
 	<div
-		class="shrink-0 px-5 pt-2 pb-4 {fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}"
+		class="shrink-0 px-5 pt-2 pb-4 {fillHeight && !isBinary ? 'flex min-h-0 flex-1 flex-col' : ''}"
 	>
 		{#snippet adherenceIndicator()}
 			{#if previewScore != null}
@@ -420,6 +436,11 @@
 			<div class="flex items-center justify-between gap-3">
 				<StarRating bind:value={satisfaction} disabled={busy} onselect={markTouched} />
 				{@render adherenceIndicator()}
+			</div>
+		{:else if habit.type === 'do_binary'}
+			<div class="flex flex-col items-center gap-1.5 py-2 text-center">
+				<p class="m-0 text-lg font-semibold">Did you do it today?</p>
+				<p class="m-0 text-sm text-subtext-0">{binaryContextLabel}</p>
 			</div>
 		{/if}
 	</div>

@@ -218,6 +218,41 @@ function aggregateMetric(
 	return average(values);
 }
 
+export function computeHabitCurrentStreak(
+	habit: Habit,
+	logs: HabitLog[],
+	timezone: string,
+	referenceDateKey: string
+): number {
+	const trackingStart = trackingStartDate(logs) ?? habitCreatedDateKey(habit, timezone);
+	const logsByDate = new Map(logs.map((log) => [log.log_date, log]));
+	let streak = 0;
+	let dateKey = referenceDateKey;
+
+	while (dateKey >= trackingStart) {
+		const log = logsByDate.get(dateKey) ?? null;
+		const result = resolveHabitDay(habit, dateKey, log, logs, timezone, trackingStart);
+
+		if (result.outcome === 'excluded') {
+			dateKey = shiftDateKey(dateKey, -1);
+			continue;
+		}
+
+		if (result.outcome === 'missed') {
+			if (dateKey === referenceDateKey && log == null) {
+				dateKey = shiftDateKey(dateKey, -1);
+				continue;
+			}
+			break;
+		}
+
+		streak += 1;
+		dateKey = shiftDateKey(dateKey, -1);
+	}
+
+	return streak;
+}
+
 function computeStreaks(points: DailyStatsPoint[]): { current: number; best: number } {
 	const eligible = points.filter(
 		(point) => point.adherence != null || point.completion != null

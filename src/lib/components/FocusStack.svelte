@@ -85,6 +85,7 @@
 		<HabitCardStack
 			habits={stackHabits}
 			{timezone}
+			{dateKey}
 			{canSkip}
 			bind:undoAvailable
 			onlog={handleLog}

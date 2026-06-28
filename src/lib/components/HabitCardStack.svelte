@@ -27,6 +27,8 @@
 	import FocusStackEmptyState from '$lib/components/FocusStackEmptyState.svelte';
 	import HabitCardPlaceholder from '$lib/components/HabitCardPlaceholder.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
+	import { getDayStore } from '$lib/habits/day.svelte';
+	import { computeHabitCurrentStreak } from '$lib/habits/stats';
 
 	type UndoEntry = {
 		habit: HabitWithLog;
@@ -37,6 +39,7 @@
 	let {
 		habits,
 		timezone,
+		dateKey,
 		canSkip = false,
 		busy = false,
 		undoAvailable = $bindable(false),
@@ -46,6 +49,7 @@
 	}: {
 		habits: HabitWithLog[];
 		timezone: string;
+		dateKey: string;
 		canSkip?: boolean;
 		busy?: boolean;
 		undoAvailable?: boolean;
@@ -76,6 +80,28 @@
 	});
 
 	const currentHabit = $derived(displayHabits[0] ?? null);
+
+	const day = getDayStore();
+
+	function habitLogsForStreak(habitId: string) {
+		const recent = day.recentLogsByHabit.get(habitId) ?? [];
+		const viewed = day.logs.filter((log) => log.habit_id === habitId);
+		const byDate = new Map<string, (typeof recent)[number]>();
+		for (const log of [...recent, ...viewed]) {
+			byDate.set(log.log_date, log);
+		}
+		return [...byDate.values()];
+	}
+
+	const currentStreak = $derived.by(() => {
+		if (!currentHabit || currentHabit.type !== 'do_binary') return null;
+		return computeHabitCurrentStreak(
+			currentHabit,
+			habitLogsForStreak(currentHabit.id),
+			timezone,
+			dateKey
+		);
+	});
 
 	const currentForm = $derived<HabitCardForm>({
 		actualValue,
@@ -292,6 +318,7 @@
 							initialForm={cardInitialForm}
 							fillHeight
 							showEdit={false}
+							{currentStreak}
 							busy={busy || animating}
 							interactive={!animating}
 							{stamp}
