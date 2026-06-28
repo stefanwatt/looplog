@@ -25,6 +25,7 @@
 	} from '$lib/habits/card-action-animation';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
 	import FocusStackEmptyState from '$lib/components/FocusStackEmptyState.svelte';
+	import HabitCardPlaceholder from '$lib/components/HabitCardPlaceholder.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 
 	type UndoEntry = {
@@ -267,14 +268,18 @@
 						style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
 						style:will-change={promoteBehindLayers ? 'transform' : undefined}
 					>
-						<SwipeHabitCard
-							habit={habit}
-							{timezone}
-							hideLog
-							fillHeight
-							showEdit={false}
-							interactive={false}
-						/>
+						{#if depth === 1}
+							<SwipeHabitCard
+								habit={habit}
+								{timezone}
+								hideLog
+								fillHeight
+								showEdit={false}
+								interactive={false}
+							/>
+						{:else}
+							<HabitCardPlaceholder />
+						{/if}
 					</div>
 				{/each}
 
