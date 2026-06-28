@@ -312,8 +312,17 @@
 	</div>
 
 	<div
-		class="shrink-0 px-5 pt-3 pb-5 {fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}"
+		class="shrink-0 px-5 pt-2 pb-4 {fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}"
 	>
+		{#snippet adherenceIndicator()}
+			{#if previewScore != null}
+				<div class="flex shrink-0 items-center gap-1 pl-1 text-lg leading-none">
+					<span class="font-bold tabular-nums">{previewScore}%</span>
+					<Icon path={previewAdherenceIcon(previewScore)} size={18} class="text-subtext-0" />
+				</div>
+			{/if}
+		{/snippet}
+
 		{#if habit.type === 'do_target'}
 			<StepLogInput
 				bind:value={actualValue}
@@ -325,6 +334,7 @@
 				disabled={busy}
 				ariaLabel="Actual amount for {habit.name}"
 				onselect={markTouched}
+				controlsTrailing={adherenceIndicator}
 			/>
 		{:else if habit.type === 'do_on_time'}
 			<StepLogInput
@@ -338,17 +348,12 @@
 				disabled={busy}
 				ariaLabel="Actual time for {habit.name}"
 				onselect={syncActualTimeFromMinutes}
+				controlsTrailing={adherenceIndicator}
 			/>
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
-			<div class="grid gap-3">
+			<div class="flex items-center justify-between gap-3">
 				<StarRating bind:value={satisfaction} disabled={busy} onselect={markTouched} />
-			</div>
-		{/if}
-
-		{#if previewScore != null}
-			<div class="mt-3 flex items-center gap-2 text-3xl leading-none">
-				<span class="inline-block w-[4.25ch] text-right font-bold tabular-nums">{previewScore}%</span>
-				<Icon path={previewAdherenceIcon(previewScore)} size="1em" class="text-subtext-0" />
+				{@render adherenceIndicator()}
 			</div>
 		{/if}
 	</div>
