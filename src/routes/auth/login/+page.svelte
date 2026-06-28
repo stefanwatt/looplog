@@ -2,12 +2,33 @@
 	import { createClient } from '$lib/supabase/client';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
-	import { mdiEmail } from '@mdi/js';
+	import { mdiEmail, mdiGoogle } from '@mdi/js';
 
 	let email = $state('');
 	let message = $state('');
 	let error = $state(page.url.searchParams.get('error') ?? '');
 	let loading = $state(false);
+
+	function authRedirectTo() {
+		return `${window.location.origin}/auth/callback`;
+	}
+
+	async function signInWithGoogle() {
+		loading = true;
+		error = '';
+		message = '';
+
+		const supabase = createClient();
+		const { error: signInError } = await supabase.auth.signInWithOAuth({
+			provider: 'google',
+			options: { redirectTo: authRedirectTo() }
+		});
+
+		if (signInError) {
+			loading = false;
+			error = signInError.message;
+		}
+	}
 
 	async function sendLink(event: SubmitEvent) {
 		event.preventDefault();
@@ -16,11 +37,9 @@
 		message = '';
 
 		const supabase = createClient();
-		const redirectTo = `${window.location.origin}/auth/callback`;
-
 		const { error: signInError } = await supabase.auth.signInWithOtp({
 			email,
-			options: { emailRedirectTo: redirectTo }
+			options: { emailRedirectTo: authRedirectTo() }
 		});
 
 		loading = false;
@@ -42,6 +61,21 @@
 	<div>
 		<h1 class="mb-1.5 text-3xl font-bold">Looplog</h1>
 		<p class="m-0 text-subtext-0">Habit tracking focused on adherence, not just progress.</p>
+	</div>
+
+	<button
+		type="button"
+		disabled={loading}
+		onclick={signInWithGoogle}
+		class="flex items-center justify-center gap-2 rounded-xl border border-surface-0 bg-surface-0/30 py-3.5 font-semibold text-text disabled:opacity-60"
+	>
+		<Icon path={mdiGoogle} size={20} />
+		{loading ? 'Redirecting…' : 'Continue with Google'}
+	</button>
+
+	<div class="relative text-center text-sm text-subtext-0">
+		<div class="absolute inset-x-0 top-1/2 border-t border-surface-0"></div>
+		<span class="relative bg-base px-3">or</span>
 	</div>
 
 	<form class="grid gap-3" onsubmit={sendLink}>
