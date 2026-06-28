@@ -1,5 +1,8 @@
+import type { HabitCategory } from '$lib/habits/categories';
+
 export type HabitType = 'do_target' | 'do_on_time' | 'do_binary' | 'avoid' | 'rate';
 export type LogStatus = 'logged' | 'skipped';
+export type { HabitCategory };
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -33,6 +36,7 @@ export interface Database {
 					user_id: string;
 					name: string;
 					type: HabitType;
+					category: HabitCategory | null;
 					active_days: number[];
 					allow_skip: boolean;
 					max_consecutive_skips: number;
@@ -52,6 +56,7 @@ export interface Database {
 					user_id: string;
 					name: string;
 					type: HabitType;
+					category?: HabitCategory | null;
 					active_days: number[];
 					allow_skip?: boolean;
 					max_consecutive_skips?: number;
@@ -71,6 +76,7 @@ export interface Database {
 					user_id?: string;
 					name?: string;
 					type?: HabitType;
+					category?: HabitCategory | null;
 					active_days?: number[];
 					allow_skip?: boolean;
 					max_consecutive_skips?: number;
@@ -134,6 +140,7 @@ export interface Database {
 		Functions: Record<string, never>;
 		Enums: {
 			habit_type: HabitType;
+			habit_category: HabitCategory;
 			log_status: LogStatus;
 		};
 		CompositeTypes: Record<string, never>;

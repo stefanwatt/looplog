@@ -15,6 +15,7 @@ const binary: Habit = {
 	user_id: 'u',
 	name: 'Brush',
 	type: 'do_binary',
+	category: null,
 	active_days: [0, 1, 2, 3, 4, 5, 6],
 	allow_skip: true,
 	max_consecutive_skips: 3,

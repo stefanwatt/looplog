@@ -18,6 +18,7 @@ function habit(overrides: Partial<Habit> = {}): Habit {
 		user_id: 'user',
 		name: 'Test habit',
 		type: 'do_binary',
+		category: null,
 		active_days: [0, 1, 2, 3, 4, 5, 6],
 		allow_skip: true,
 		max_consecutive_skips: 2,

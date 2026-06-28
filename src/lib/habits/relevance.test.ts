@@ -14,6 +14,7 @@ function habit(id: string, name: string, anchorTime: string): HabitWithLog {
 		user_id: 'user',
 		name,
 		type: 'do_binary',
+		category: null,
 		active_days: [0, 1, 2, 3, 4, 5, 6],
 		allow_skip: true,
 		max_consecutive_skips: 3,

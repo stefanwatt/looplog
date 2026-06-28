@@ -11,7 +11,7 @@
 		parseTimeToMinutes,
 		previewAdherenceIcon
 	} from '$lib/habits/adherence';
-	import { getIllustrationForAnchorTime } from '$lib/illustrations';
+	import { getHabitIllustration } from '$lib/illustrations';
 	import CardActionStamp from '$lib/components/CardActionStamp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
@@ -158,9 +158,7 @@
 		});
 	});
 
-	const resolvedIllustration = $derived(
-		illustrationSrc ?? getIllustrationForAnchorTime(habit.anchor_time)
-	);
+	const resolvedIllustration = $derived(illustrationSrc ?? getHabitIllustration(habit));
 
 	const logStep = $derived(habit.log_step ?? 5);
 

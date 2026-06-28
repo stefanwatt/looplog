@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/components/Icon.svelte';
+	import HabitWizardFooter from '$lib/components/HabitWizardFooter.svelte';
 	import { defaultScoringForType, DEFAULT_LOG_STEP, habitTypeHasAnchorStep, habitTypeHasConfigStep } from '$lib/habits/defaults';
 	import {
 		ALL_DAYS,
@@ -157,7 +158,7 @@
 	<title>Edit {habit.name} · Looplog</title>
 </svelte:head>
 
-<section class="grid gap-4">
+<section class="grid gap-4 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))]">
 	<header>
 		<a href="/day" class="inline-flex items-center gap-1 text-blue no-underline">
 			<Icon path={mdiChevronLeft} size={20} />
@@ -294,7 +295,23 @@
 		</div>
 	{/if}
 
-	<div class="flex gap-3">
+	{#if error}
+		<p class="text-red">{error}</p>
+	{/if}
+
+	<div class="grid gap-2 border-t border-surface-0/50 pt-4">
+		<p class="m-0 text-sm text-subtext-1">Danger zone</p>
+		<button
+			type="button"
+			class="rounded-xl border border-red/40 bg-red/10 py-3.5 font-semibold text-red disabled:opacity-60"
+			disabled={saving || deleting}
+			onclick={deleteHabit}
+		>
+			{deleting ? 'Deleting…' : 'Delete habit'}
+		</button>
+	</div>
+
+	<HabitWizardFooter>
 		{#if step > 1}
 			<button
 				type="button"
@@ -325,21 +342,5 @@
 				{saving ? 'Saving…' : 'Save changes'}
 			</button>
 		{/if}
-	</div>
-
-	{#if error}
-		<p class="text-red">{error}</p>
-	{/if}
-
-	<div class="grid gap-2 border-t border-surface-0/50 pt-4">
-		<p class="m-0 text-sm text-subtext-1">Danger zone</p>
-		<button
-			type="button"
-			class="rounded-xl border border-red/40 bg-red/10 py-3.5 font-semibold text-red disabled:opacity-60"
-			disabled={saving || deleting}
-			onclick={deleteHabit}
-		>
-			{deleting ? 'Deleting…' : 'Delete habit'}
-		</button>
-	</div>
+	</HabitWizardFooter>
 </section>

@@ -8,17 +8,10 @@ import noon from '$lib/assets/illustrations/noon.svg';
 import relationship from '$lib/assets/illustrations/relationship.svg';
 import selfCare from '$lib/assets/illustrations/self-care.svg';
 import sports from '$lib/assets/illustrations/sports.svg';
+import type { HabitCategory } from '$lib/habits/categories';
+import type { Habit } from '$lib/database.types';
 
 export type TimeOfDay = 'morning' | 'noon' | 'night';
-
-export type CategoryIllustration =
-	| 'cleaning'
-	| 'education'
-	| 'exercise'
-	| 'hygiene'
-	| 'relationship'
-	| 'self-care'
-	| 'sports';
 
 const timeOfDayIllustrations: Record<TimeOfDay, string> = {
 	morning,
@@ -26,7 +19,7 @@ const timeOfDayIllustrations: Record<TimeOfDay, string> = {
 	night
 };
 
-const categoryIllustrations: Record<CategoryIllustration, string> = {
+const categoryIllustrations: Record<HabitCategory, string> = {
 	cleaning,
 	education,
 	exercise,
@@ -60,6 +53,11 @@ export function getIllustrationForAnchorTime(anchorTime: string | null): string 
 	return timeOfDayIllustrations[getTimeOfDayFromAnchorTime(anchorTime)];
 }
 
-export function getCategoryIllustration(category: CategoryIllustration): string {
+export function getCategoryIllustration(category: HabitCategory): string {
 	return categoryIllustrations[category];
+}
+
+export function getHabitIllustration(habit: Pick<Habit, 'category' | 'anchor_time'>): string {
+	if (habit.category) return getCategoryIllustration(habit.category);
+	return getIllustrationForAnchorTime(habit.anchor_time);
 }
