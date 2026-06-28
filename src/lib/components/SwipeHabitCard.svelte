@@ -379,23 +379,21 @@
 	</div>
 
 	<div
-		class="relative overflow-hidden bg-surface-0/15 {isBinary && fillHeight
-			? 'min-h-0 flex-1 shrink'
-			: `shrink-0 ${CARD_IMAGE_HEIGHT_CLASS}`}"
-		aria-hidden="true"
+		class="flex min-h-0 flex-col justify-center px-5 {fillHeight ? 'flex-1' : 'shrink-0 py-2'}"
 	>
-		<img
-			src={resolvedIllustration}
-			alt=""
-			class="absolute inset-0 h-full w-full object-contain object-center {isBinary && fillHeight
-				? 'p-6 sm:p-8'
-				: 'p-4'}"
-		/>
+		<div
+			class="relative w-full shrink-0 overflow-hidden bg-surface-0/15 {CARD_IMAGE_HEIGHT_CLASS}"
+			aria-hidden="true"
+		>
+			<img
+				src={resolvedIllustration}
+				alt=""
+				class="absolute inset-0 h-full w-full object-contain object-center p-4"
+			/>
+		</div>
 	</div>
 
-	<div
-		class="shrink-0 px-5 pt-2 pb-4 {fillHeight && !isBinary ? 'flex min-h-0 flex-1 flex-col' : ''}"
-	>
+	<div class="shrink-0 px-5 pt-2 pb-4">
 		{#snippet adherenceIndicator()}
 			{#if previewScore != null}
 				<div class="flex shrink-0 items-center gap-1 pl-1 text-lg leading-none">

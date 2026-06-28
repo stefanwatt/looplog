@@ -10,7 +10,11 @@
 		<div class="h-7 w-2/3 max-w-48 rounded-lg bg-surface-0/35"></div>
 	</div>
 
-	<div class="shrink-0 {CARD_IMAGE_HEIGHT_CLASS} bg-surface-0/15"></div>
+	<div class="flex min-h-0 flex-1 flex-col justify-center px-5">
+		<div class="w-full shrink-0 {CARD_IMAGE_HEIGHT_CLASS} rounded-lg bg-surface-0/15"></div>
+	</div>
 
-	<div class="min-h-0 flex-1 shrink-0 bg-surface-0/10"></div>
+	<div class="shrink-0 px-5 pt-2 pb-4">
+		<div class="h-10 rounded-lg bg-surface-0/10"></div>
+	</div>
 </div>
