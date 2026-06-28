@@ -142,18 +142,16 @@
 		}
 	}
 
-	function clearBehindDirectTransforms() {
-		for (const habit of behindHabits) {
-			behindLayerEls[habit.id]?.style.removeProperty('transform');
+	function handleDragEnd() {
+		const progress = cardStackDragProgress(dragX);
+		for (let i = 0; i < behindHabits.length; i++) {
+			const el = behindLayerEls[behindHabits[i].id];
+			if (!el) continue;
+			el.style.transform = behindTransform(i + 1, progress);
 		}
 	}
 
 	const promoteBehindLayers = $derived(dragging || animating || dragProgress > 0);
-
-	$effect(() => {
-		if (dragging) return;
-		clearBehindDirectTransforms();
-	});
 
 	function snapshotForm(): HabitCardForm {
 		return {
@@ -300,6 +298,7 @@
 							bind:satisfaction
 							bind:touched
 							ondragframe={handleDragFrame}
+							ondragend={handleDragEnd}
 							onfail={handleFail}
 							oncheck={handleCheck}
 						/>

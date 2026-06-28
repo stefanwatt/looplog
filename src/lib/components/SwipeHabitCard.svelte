@@ -53,6 +53,7 @@
 		stamp = null,
 		formPreview = null,
 		ondragframe,
+		ondragend,
 		onfail,
 		oncheck
 	}: {
@@ -75,6 +76,7 @@
 		stamp?: CardActionStampType | null;
 		formPreview?: HabitCardForm | null;
 		ondragframe?: (dragX: number) => void;
+		ondragend?: () => void;
 		onfail?: () => void | Promise<void>;
 		oncheck?: () => void | Promise<void>;
 	} = $props();
@@ -243,6 +245,7 @@
 		frameDragX = 0;
 		dragX = 0;
 		dragging = false;
+		ondragend?.();
 	}
 
 	function onTransformTransitionEnd(event: TransitionEvent) {
