@@ -18,20 +18,23 @@ function isSameOrigin(url: URL) {
 sw.addEventListener('install', (event) => {
 	async function addFilesToCache() {
 		const cache = await caches.open(CACHE);
-		await cache.addAll(ASSETS);
+		await Promise.allSettled(ASSETS.map((asset) => cache.add(asset)));
+		await sw.skipWaiting();
 	}
 
 	event.waitUntil(addFilesToCache());
 });
 
 sw.addEventListener('activate', (event) => {
-	async function deleteOldCaches() {
+	async function activate() {
 		for (const key of await caches.keys()) {
 			if (key !== CACHE) await caches.delete(key);
 		}
+
+		await sw.clients.claim();
 	}
 
-	event.waitUntil(deleteOldCaches());
+	event.waitUntil(activate());
 });
 
 sw.addEventListener('fetch', (event) => {

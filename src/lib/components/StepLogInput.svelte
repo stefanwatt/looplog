@@ -52,13 +52,13 @@
 	}
 
 	const quickButtonClass =
-		'min-w-0 flex-1 truncate rounded-xl border border-surface-0/60 bg-surface-0/30 px-2 py-2 text-sm font-medium text-text transition enabled:active:scale-95 disabled:opacity-40';
+		'rounded-xl border border-surface-0/60 bg-surface-0/30 px-1.5 py-2 text-xs font-medium text-text transition enabled:active:scale-95 disabled:opacity-40 sm:text-sm';
 	const stepButtonClass =
 		'grid size-11 shrink-0 place-items-center rounded-full border border-surface-0/60 bg-surface-0/40 text-text transition enabled:active:scale-95 disabled:opacity-40';
 </script>
 
 <div class="grid gap-3" role="group" aria-label={ariaLabel} onpointerdown={stopSwipe}>
-	<div class="flex flex-nowrap gap-1.5">
+	<div class="grid grid-cols-3 gap-1.5">
 		{#each quickOptions as option (option.value)}
 			<button
 				type="button"

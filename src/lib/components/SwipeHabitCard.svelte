@@ -29,6 +29,8 @@
 	} from '$lib/habits/card-action-animation';
 	import { mdiPencil } from '@mdi/js';
 
+	const CARD_IMAGE_HEIGHT_CLASS = 'h-36 sm:h-40';
+
 	let {
 		habit,
 		log = null,
@@ -38,6 +40,7 @@
 		busy = false,
 		interactive = true,
 		fillHeight = false,
+		showEdit = true,
 		illustrationSrc,
 		dragX = $bindable(0),
 		dragging = $bindable(false),
@@ -58,6 +61,7 @@
 		busy?: boolean;
 		interactive?: boolean;
 		fillHeight?: boolean;
+		showEdit?: boolean;
 		illustrationSrc?: string;
 		dragX?: number;
 		dragging?: boolean;
@@ -163,6 +167,18 @@
 			: []
 	);
 
+	const habitMeta = $derived.by(() => {
+		if (habit.type === 'do_target' && habit.target_value != null) {
+			return `Target ${habit.target_value} ${habit.target_unit}`;
+		}
+
+		if (habit.type === 'do_on_time' && habit.target_time) {
+			return `Target ${formatTimeLabel(habit.target_time)}`;
+		}
+
+		return null;
+	});
+
 	const transform = $derived(`translateX(${dragX}px) rotate(${dragX * 0.04}deg)`);
 	const transformTransition = $derived(!dragging ? 'transform 200ms ease-out' : 'none');
 
@@ -263,84 +279,82 @@
 		/>
 	{/if}
 
+	<div class="shrink-0 px-5 pt-4 pb-2">
+		<div class="flex min-w-0 items-baseline justify-between gap-3">
+			<h2 class="m-0 min-w-0 truncate text-xl font-bold sm:text-2xl">{habit.name}</h2>
+			<div class="flex shrink-0 items-center gap-2">
+				{#if habit.anchor_time}
+					<span class="text-sm font-semibold text-blue tabular-nums">
+						{formatTimeLabel(habit.anchor_time)}
+					</span>
+				{/if}
+				{#if showEdit}
+					<a
+						href="/habits/{habit.id}/edit"
+						class="grid place-items-center rounded-lg p-1.5 text-subtext-0 no-underline"
+						aria-label="Edit {habit.name}"
+						onpointerdown={(event) => event.stopPropagation()}
+					>
+						<Icon path={mdiPencil} size={18} />
+					</a>
+				{/if}
+			</div>
+		</div>
+		{#if habitMeta}
+			<p class="m-0 mt-1 text-sm text-subtext-1">{habitMeta}</p>
+		{/if}
+	</div>
+
 	<div
-		class="relative overflow-hidden bg-surface-0/15 {fillHeight
-			? 'min-h-0 flex-1'
-			: 'h-44 shrink-0'}"
+		class="relative shrink-0 overflow-hidden bg-surface-0/15 {CARD_IMAGE_HEIGHT_CLASS}"
 		aria-hidden="true"
 	>
 		<img
 			src={resolvedIllustration}
 			alt=""
-			class="absolute inset-0 h-full w-full object-contain object-bottom p-6 pb-2"
+			class="absolute inset-0 h-full w-full object-contain object-center p-4"
 		/>
 	</div>
 
-	<div class="shrink-0 p-5 pt-3">
-		<div class="mb-4 flex items-start justify-between gap-3">
-			<div>
-				<p class="m-0 text-sm font-semibold text-blue">{formatTimeLabel(habit.anchor_time)}</p>
-				<h2 class="mt-1.5 mb-0 text-2xl font-bold">{habit.name}</h2>
-			</div>
-			<a
-				href="/habits/{habit.id}/edit"
-				class="grid shrink-0 place-items-center rounded-lg p-1.5 text-subtext-0 no-underline"
-				aria-label="Edit {habit.name}"
-				onpointerdown={(event) => event.stopPropagation()}
-			>
-				<Icon path={mdiPencil} size={18} />
-			</a>
-		</div>
-
+	<div
+		class="shrink-0 px-5 pt-3 pb-5 {fillHeight ? 'flex min-h-0 flex-1 flex-col' : ''}"
+	>
 		{#if habit.type === 'do_target'}
-			<div class="mb-4 grid gap-2">
-				<p class="m-0 text-subtext-1">
-					Target {habit.target_value} {habit.target_unit}
-				</p>
-				<StepLogInput
-					bind:value={actualValue}
-					step={logStep}
-					baseline={0}
-					min={0}
-					quickOptions={targetQuickOptions}
-					formatDisplay={(value) => `${value} ${habit.target_unit}`}
-					disabled={busy}
-					ariaLabel="Actual amount for {habit.name}"
-					onselect={markTouched}
-				/>
-			</div>
+			<StepLogInput
+				bind:value={actualValue}
+				step={logStep}
+				baseline={0}
+				min={0}
+				quickOptions={targetQuickOptions}
+				formatDisplay={(value) => `${value} ${habit.target_unit}`}
+				disabled={busy}
+				ariaLabel="Actual amount for {habit.name}"
+				onselect={markTouched}
+			/>
 		{:else if habit.type === 'do_on_time'}
-			<div class="mb-4 grid gap-2">
-				<p class="m-0 text-subtext-1">Target {formatTimeLabel(habit.target_time)}</p>
-				<StepLogInput
-					bind:value={actualTimeMinutes}
-					step={logStep}
-					baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
-					min={0}
-					max={24 * 60 - 1}
-					quickOptions={timeQuickOptions}
-					formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
-					disabled={busy}
-					ariaLabel="Actual time for {habit.name}"
-					onselect={syncActualTimeFromMinutes}
-				/>
-			</div>
+			<StepLogInput
+				bind:value={actualTimeMinutes}
+				step={logStep}
+				baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
+				min={0}
+				max={24 * 60 - 1}
+				quickOptions={timeQuickOptions}
+				formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
+				disabled={busy}
+				ariaLabel="Actual time for {habit.name}"
+				onselect={syncActualTimeFromMinutes}
+			/>
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
-			<div class="mb-4 grid gap-3">
-				<p class="m-0 text-subtext-1">How did you do?</p>
+			<div class="grid gap-3">
 				<StarRating bind:value={satisfaction} disabled={busy} onselect={markTouched} />
 			</div>
 		{/if}
 
-		<div class="flex items-center gap-2">
-			{#if previewScore == null}
-				<span class="text-subtext-0">Swipe or use the buttons below</span>
-			{:else}
-				<div class="flex items-center gap-2 text-3xl leading-none">
-					<span class="inline-block w-[4.25ch] text-right font-bold tabular-nums">{previewScore}%</span>
-					<Icon path={previewAdherenceIcon(previewScore)} size="1em" class="text-subtext-0" />
-				</div>
-			{/if}
-		</div>
+		{#if previewScore != null}
+			<div class="mt-3 flex items-center gap-2 text-3xl leading-none">
+				<span class="inline-block w-[4.25ch] text-right font-bold tabular-nums">{previewScore}%</span>
+				<Icon path={previewAdherenceIcon(previewScore)} size="1em" class="text-subtext-0" />
+			</div>
+		{/if}
 	</div>
 </div>

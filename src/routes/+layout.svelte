@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import CreateHabitButton from '$lib/components/CreateHabitButton.svelte';
+	import InstallApp from '$lib/components/InstallApp.svelte';
 	import DayTab from '$lib/components/tabs/DayTab.svelte';
 	import FocusTab from '$lib/components/tabs/FocusTab.svelte';
 	import StatsTab from '$lib/components/tabs/StatsTab.svelte';
@@ -108,6 +109,8 @@
 			{@render children()}
 		{/if}
 	</main>
+
+	<InstallApp />
 
 	{#if showNav}
 		<nav

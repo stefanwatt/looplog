@@ -53,7 +53,7 @@ export function quickTimeOptions(
 ): QuickOption[] {
 	const target = parseTimeToMinutes(targetTime);
 	const candidates = [
-		{ offset: 0, label: 'On time', priority: 0 },
+		{ offset: 0, label: 'Exact', priority: 0 },
 		{ offset: step, label: `+${step}m`, priority: 1 },
 		{ offset: -step, label: `−${step}m`, priority: 2 },
 		{ offset: grace, label: `+${grace}m`, priority: 3 },

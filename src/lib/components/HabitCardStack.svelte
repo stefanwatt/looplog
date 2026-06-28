@@ -234,7 +234,14 @@
 						style:z-index={10 - depth}
 						style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
 					>
-						<SwipeHabitCard habit={habit} {timezone} hideLog fillHeight interactive={false} />
+						<SwipeHabitCard
+							habit={habit}
+							{timezone}
+							hideLog
+							fillHeight
+							showEdit={false}
+							interactive={false}
+						/>
 					</div>
 				{/each}
 
@@ -246,6 +253,7 @@
 							hideLog
 							initialForm={cardInitialForm}
 							fillHeight
+							showEdit={false}
 							busy={busy || animating}
 							interactive={!animating}
 							{stamp}
