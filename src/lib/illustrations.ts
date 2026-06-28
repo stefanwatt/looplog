@@ -2,12 +2,13 @@ import cleaning from '$lib/assets/illustrations/cleaning.svg';
 import education from '$lib/assets/illustrations/education.svg';
 import exercise from '$lib/assets/illustrations/exercise.svg';
 import hygiene from '$lib/assets/illustrations/hygiene.svg';
+import nutrition from '$lib/assets/illustrations/nutrition.svg';
 import morning from '$lib/assets/illustrations/morning.svg';
 import night from '$lib/assets/illustrations/night.svg';
 import noon from '$lib/assets/illustrations/noon.svg';
 import relationship from '$lib/assets/illustrations/relationship.svg';
 import selfCare from '$lib/assets/illustrations/self-care.svg';
-import sports from '$lib/assets/illustrations/sports.svg';
+import work from '$lib/assets/illustrations/work.svg';
 import type { HabitCategory } from '$lib/habits/categories';
 import type { Habit } from '$lib/database.types';
 
@@ -24,9 +25,10 @@ const categoryIllustrations: Record<HabitCategory, string> = {
 	education,
 	exercise,
 	hygiene,
+	nutrition,
 	relationship,
 	'self-care': selfCare,
-	sports
+	work
 };
 
 export function getTimeOfDayFromHour(hour: number): TimeOfDay {

@@ -3,9 +3,10 @@ export const HABIT_CATEGORIES = [
 	'education',
 	'exercise',
 	'hygiene',
+	'nutrition',
 	'relationship',
 	'self-care',
-	'sports'
+	'work'
 ] as const;
 
 export type HabitCategory = (typeof HABIT_CATEGORIES)[number];
@@ -15,7 +16,8 @@ export const HABIT_CATEGORY_LABELS: Record<HabitCategory, string> = {
 	education: 'Education',
 	exercise: 'Exercise',
 	hygiene: 'Hygiene',
+	nutrition: 'Nutrition',
 	relationship: 'Relationship',
 	'self-care': 'Self care',
-	sports: 'Sports'
+	work: 'Work'
 };
