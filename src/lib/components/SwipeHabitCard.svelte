@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { Habit, HabitLog } from '$lib/database.types';
 	import type { HabitCardForm } from '$lib/habits/card-actions';
 	import { blankCardForm, canCheckHabit } from '$lib/habits/card-actions';
@@ -51,6 +52,7 @@
 		touched = $bindable(false),
 		stamp = null,
 		formPreview = null,
+		ondragframe,
 		onfail,
 		oncheck
 	}: {
@@ -72,13 +74,19 @@
 		touched?: boolean;
 		stamp?: CardActionStampType | null;
 		formPreview?: HabitCardForm | null;
+		ondragframe?: (dragX: number) => void;
 		onfail?: () => void | Promise<void>;
 		oncheck?: () => void | Promise<void>;
 	} = $props();
 
+	let cardEl = $state<HTMLDivElement | undefined>();
 	let startX = $state(0);
 	let settling = $state(false);
+	let frameDragX = $state(0);
 	let actualTimeMinutes = $state<number | null>(null);
+
+	let liveDragX = 0;
+	let dragRafId: number | null = null;
 
 	$effect(() => {
 		habit.id;
@@ -133,8 +141,8 @@
 
 	const previewScore = $derived.by(() => {
 		if (interactive && dragging && habit.type === 'do_binary') {
-			if (dragX >= 40) return 100;
-			if (dragX <= -40) return 0;
+			if (frameDragX >= 40) return 100;
+			if (frameDragX <= -40) return 0;
 		}
 
 		if (habit.type === 'do_binary') return null;
@@ -186,19 +194,53 @@
 	const promoteLayer = $derived(dragging || dragX !== 0 || settling);
 
 	const failurePreviewProgress = $derived(
-		interactive && dragging && !stamp && dragX < -CARD_SWIPE_PREVIEW_START_PX
-			? swipePreviewOpacity(dragX)
+		interactive && dragging && !stamp && frameDragX < -CARD_SWIPE_PREVIEW_START_PX
+			? swipePreviewOpacity(frameDragX)
 			: 0
 	);
 
 	const successPreviewProgress = $derived(
-		interactive && dragging && !stamp && dragX > CARD_SWIPE_PREVIEW_START_PX
-			? swipePreviewOpacity(dragX)
+		interactive && dragging && !stamp && frameDragX > CARD_SWIPE_PREVIEW_START_PX
+			? swipePreviewOpacity(frameDragX)
 			: 0
 	);
 
+	function clearDirectTransform() {
+		if (cardEl) cardEl.style.transform = '';
+	}
+
+	function cancelDragFrame() {
+		if (dragRafId == null) return;
+		cancelAnimationFrame(dragRafId);
+		dragRafId = null;
+	}
+
+	function applyDragFrame() {
+		if (!dragging || !cardEl) return;
+		cardEl.style.transform = cardDragTransform(liveDragX);
+		ondragframe?.(liveDragX);
+		frameDragX = liveDragX;
+	}
+
+	function flushDragFrame() {
+		cancelDragFrame();
+		applyDragFrame();
+	}
+
+	function scheduleDragFrame() {
+		if (dragRafId != null) return;
+		dragRafId = requestAnimationFrame(() => {
+			dragRafId = null;
+			applyDragFrame();
+		});
+	}
+
 	function resetDrag() {
-		if (dragX !== 0) settling = true;
+		cancelDragFrame();
+		clearDirectTransform();
+		if (liveDragX !== 0) settling = true;
+		liveDragX = 0;
+		frameDragX = 0;
 		dragX = 0;
 		dragging = false;
 	}
@@ -220,6 +262,8 @@
 	function onPointerDown(event: PointerEvent) {
 		if (!interactive || busy) return;
 		settling = false;
+		liveDragX = 0;
+		frameDragX = 0;
 		dragging = true;
 		startX = event.clientX;
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -227,20 +271,24 @@
 
 	function onPointerMove(event: PointerEvent) {
 		if (!dragging) return;
-		dragX = event.clientX - startX;
+		liveDragX = event.clientX - startX;
+		scheduleDragFrame();
 	}
 
 	async function onPointerUp() {
 		if (!dragging) return;
+		flushDragFrame();
+
+		const x = liveDragX;
 		const threshold = CARD_SWIPE_ACTION_THRESHOLD_PX;
 
-		if (dragX <= -threshold && onfail) {
+		if (x <= -threshold && onfail) {
 			resetDrag();
 			await onfail();
 			return;
 		}
 
-		if (dragX >= threshold && canCheck && oncheck) {
+		if (x >= threshold && canCheck && oncheck) {
 			resetDrag();
 			await oncheck();
 			return;
@@ -248,15 +296,18 @@
 
 		resetDrag();
 	}
+
+	onDestroy(cancelDragFrame);
 </script>
 
 <div
+	bind:this={cardEl}
 	class="relative select-none overflow-hidden rounded-2xl border border-surface-0/50 bg-surface-1 shadow-xl shadow-crust/50 {fillHeight
 		? 'flex h-full min-h-0 flex-col'
 		: ''}"
 	role="group"
 	aria-label="{habit.name} logging card"
-	style:transform
+	style:transform={dragging ? undefined : transform}
 	style:transition={transformTransition}
 	style:will-change={promoteLayer ? 'transform' : undefined}
 	style:touch-action={interactive ? 'pan-y' : undefined}

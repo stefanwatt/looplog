@@ -17,9 +17,9 @@
 		CARD_ACTION_STAMPS,
 		CARD_EXIT_MS,
 		CARD_EXIT_SWIPE_PX,
-		CARD_SWIPE_ACTION_THRESHOLD_PX,
 		CARD_STAMP_HOLD_MS,
 		cardStackBehindTransform,
+		cardStackDragProgress,
 		type CardActionStampType,
 		wait
 	} from '$lib/habits/card-action-animation';
@@ -65,6 +65,7 @@
 	let animating = $state(false);
 	let stamp = $state<CardActionStampType | null>(null);
 	let formPreview = $state<HabitCardForm | null>(null);
+	let behindLayerEls = $state<Record<string, HTMLDivElement>>({});
 
 	const displayHabits = $derived.by(() => {
 		const restore = undoRestore;
@@ -110,11 +111,20 @@
 	const PEEK_PX = 16;
 	const SCALE_STEP = 0.05;
 
-	const dragProgress = $derived(
-		Math.min(Math.abs(dragX) / CARD_SWIPE_ACTION_THRESHOLD_PX, 1)
-	);
+	const dragProgress = $derived(cardStackDragProgress(dragX));
 	const behindHabits = $derived(displayHabits.slice(1, 3));
 	const stackPadding = $derived(behindHabits.length * PEEK_PX);
+
+	function bindBehindLayer(node: HTMLDivElement, habitId: string) {
+		behindLayerEls = { ...behindLayerEls, [habitId]: node };
+		return {
+			destroy() {
+				const next = { ...behindLayerEls };
+				delete next[habitId];
+				behindLayerEls = next;
+			}
+		};
+	}
 
 	function behindTransform(depth: number, progress: number) {
 		const effectiveDepth = depth - progress;
@@ -123,7 +133,27 @@
 		return cardStackBehindTransform(translateY, scale);
 	}
 
+	function handleDragFrame(x: number) {
+		const progress = cardStackDragProgress(x);
+		for (let i = 0; i < behindHabits.length; i++) {
+			const el = behindLayerEls[behindHabits[i].id];
+			if (!el) continue;
+			el.style.transform = behindTransform(i + 1, progress);
+		}
+	}
+
+	function clearBehindDirectTransforms() {
+		for (const habit of behindHabits) {
+			behindLayerEls[habit.id]?.style.removeProperty('transform');
+		}
+	}
+
 	const promoteBehindLayers = $derived(dragging || animating || dragProgress > 0);
+
+	$effect(() => {
+		if (dragging) return;
+		clearBehindDirectTransforms();
+	});
 
 	function snapshotForm(): HabitCardForm {
 		return {
@@ -232,8 +262,9 @@
 				{#each behindHabits as habit, i (habit.id)}
 					{@const depth = i + 1}
 					<div
+						use:bindBehindLayer={habit.id}
 						class="pointer-events-none absolute inset-0 origin-bottom"
-						style:transform={behindTransform(depth, dragProgress)}
+						style:transform={dragging ? undefined : behindTransform(depth, dragProgress)}
 						style:z-index={10 - depth}
 						style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
 						style:will-change={promoteBehindLayers ? 'transform' : undefined}
@@ -268,6 +299,7 @@
 							bind:actualTime
 							bind:satisfaction
 							bind:touched
+							ondragframe={handleDragFrame}
 							onfail={handleFail}
 							oncheck={handleCheck}
 						/>

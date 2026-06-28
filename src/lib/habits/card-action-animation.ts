@@ -54,3 +54,8 @@ export function cardStackBehindTransform(translateY: number, scale: number): str
 	const y = Math.round(translateY);
 	return `translate3d(0, ${y}px, 0) scale(${scale})`;
 }
+
+/** Normalized swipe progress (0–1) for revealing cards behind the active card. */
+export function cardStackDragProgress(dragX: number): number {
+	return Math.min(Math.abs(dragX) / CARD_SWIPE_ACTION_THRESHOLD_PX, 1);
+}
