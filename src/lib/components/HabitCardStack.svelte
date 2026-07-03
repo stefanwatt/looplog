@@ -16,9 +16,11 @@
 	import {
 		CARD_STAMP_HOLD_MS,
 		type CardActionStampType,
+		prefersSimpleCardMotion,
 		wait
 	} from '$lib/habits/card-action-animation';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
+	import HabitCardPlaceholder from '$lib/components/HabitCardPlaceholder.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import type { CarouselAPI } from '$lib/components/ui/carousel/context.js';
@@ -64,6 +66,8 @@
 	let animating = $state(false);
 	let stamp = $state<CardActionStampType | null>(null);
 	let formPreview = $state<HabitCardForm | null>(null);
+
+	let dragAllowed = true;
 
 	const day = getDayStore();
 
@@ -111,6 +115,13 @@
 	const canUndo = $derived(lastLogged != null);
 	const carouselBusy = $derived(busy || animating);
 
+	const renderedIndices = $derived.by(() => {
+		if (habitCount <= 1) return new Set([currentIndex]);
+		const prev = (currentIndex - 1 + habitCount) % habitCount;
+		const next = (currentIndex + 1) % habitCount;
+		return new Set([prev, currentIndex, next]);
+	});
+
 	const cardInitialForm = $derived(
 		undoRestore?.habit.id === currentHabit?.id ? undoRestore.form : null
 	);
@@ -119,6 +130,10 @@
 		carouselResetKey;
 		emblaApi = undefined;
 		currentIndex = startIndex;
+	});
+
+	$effect(() => {
+		dragAllowed = !carouselBusy;
 	});
 
 	function snapshotForm(): HabitCardForm {
@@ -145,21 +160,34 @@
 		currentIndex = api.selectedScrollSnap();
 	}
 
-	$effect(() => {
-		if (!emblaApi) return;
-		emblaApi.on('select', handleEmblaSelect);
-		return () => {
-			emblaApi?.off('select', handleEmblaSelect);
-		};
-	});
+	function promoteEmblaLayer(active: boolean) {
+		const container = emblaApi?.containerNode();
+		if (!container) return;
+		if (active) {
+			container.style.willChange = 'transform';
+			container.style.backfaceVisibility = 'hidden';
+			return;
+		}
+		container.style.removeProperty('will-change');
+		container.style.removeProperty('backface-visibility');
+	}
 
 	$effect(() => {
 		if (!emblaApi) return;
-		emblaApi.reInit({
-			loop: habitCount > 1,
-			watchDrag: !carouselBusy,
-			align: 'start'
-		});
+
+		const onScroll = () => promoteEmblaLayer(true);
+		const onSettle = () => promoteEmblaLayer(false);
+
+		emblaApi.on('select', handleEmblaSelect);
+		emblaApi.on('scroll', onScroll);
+		emblaApi.on('settle', onSettle);
+
+		return () => {
+			emblaApi?.off('select', handleEmblaSelect);
+			emblaApi?.off('scroll', onScroll);
+			emblaApi?.off('settle', onSettle);
+			promoteEmblaLayer(false);
+		};
 	});
 
 	function handleFail() {
@@ -248,17 +276,21 @@
 			opts={{
 				loop: habitCount > 1,
 				startIndex,
-				watchDrag: !carouselBusy,
-				align: 'start'
+				watchDrag: () => dragAllowed,
+				align: 'start',
+				duration: prefersSimpleCardMotion() ? 20 : 25
 			}}
 			setApi={handleEmblaInit}
 		>
-			<Carousel.Content class="h-full min-h-0 -ms-0">
+			<Carousel.Content class="h-full min-h-0 -ms-0 [transform:translate3d(0,0,0)]">
 				{#each habits as habit, index (habit.id)}
 					{@const isCurrent = index === currentIndex}
+					{@const isRendered = renderedIndices.has(index)}
 					<Carousel.Item class="h-full ps-0">
 						<div class="h-full min-h-0">
-							{#if isCurrent}
+							{#if !isRendered}
+								<HabitCardPlaceholder />
+							{:else if isCurrent}
 								{#key `${habit.id}-${undoRestore?.habit.id === habit.id ? 'undo' : 'live'}`}
 									<SwipeHabitCard
 										{habit}
@@ -304,7 +336,7 @@
 		>
 			{#each habits as _, index (index)}
 				<span
-					class="rounded-full transition-all duration-200 {index === currentIndex
+					class="rounded-full transition-[width,background-color] duration-200 {index === currentIndex
 						? 'h-1.5 w-4 bg-blue'
 						: 'size-1.5 bg-surface-2'}"
 					aria-hidden="true"

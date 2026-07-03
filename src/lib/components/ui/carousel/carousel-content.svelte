@@ -31,7 +31,7 @@
 	<div
 		bind:this={ref}
 		class={cn(
-			"flex",
+			"flex h-full min-h-0",
 			emblaCtx.orientation === "horizontal" ? "-ms-4" : "-mt-4 flex-col",
 			className
 		)}
