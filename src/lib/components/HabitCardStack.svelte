@@ -145,13 +145,19 @@
 		};
 	}
 
-	function handleEmblaSelect() {
+	function handleEmblaSettle() {
 		if (!emblaApi) return;
+
 		const nextIndex = emblaApi.selectedScrollSnap();
-		if (nextIndex === currentIndex) return;
-		currentIndex = nextIndex;
-		undoRestore = null;
-		onnavigate?.();
+		requestAnimationFrame(() => {
+			if (nextIndex !== currentIndex) {
+				currentIndex = nextIndex;
+				undoRestore = null;
+				onnavigate?.();
+			}
+
+			requestAnimationFrame(() => promoteEmblaLayer(false));
+		});
 	}
 
 	function handleEmblaInit(api: CarouselAPI | undefined) {
@@ -176,16 +182,13 @@
 		if (!emblaApi) return;
 
 		const onScroll = () => promoteEmblaLayer(true);
-		const onSettle = () => promoteEmblaLayer(false);
 
-		emblaApi.on('select', handleEmblaSelect);
 		emblaApi.on('scroll', onScroll);
-		emblaApi.on('settle', onSettle);
+		emblaApi.on('settle', handleEmblaSettle);
 
 		return () => {
-			emblaApi?.off('select', handleEmblaSelect);
 			emblaApi?.off('scroll', onScroll);
-			emblaApi?.off('settle', onSettle);
+			emblaApi?.off('settle', handleEmblaSettle);
 			promoteEmblaLayer(false);
 		};
 	});
@@ -290,35 +293,24 @@
 						<div class="h-full min-h-0">
 							{#if !isRendered}
 								<HabitCardPlaceholder />
-							{:else if isCurrent}
-								{#key `${habit.id}-${undoRestore?.habit.id === habit.id ? 'undo' : 'live'}`}
-									<SwipeHabitCard
-										{habit}
-										log={habit.log}
-										{timezone}
-										hideLog
-										initialForm={cardInitialForm}
-										fillHeight
-										showEdit={false}
-										{currentStreak}
-										busy={carouselBusy}
-										{stamp}
-										{formPreview}
-										bind:actualValue
-										bind:actualTime
-										bind:satisfaction
-										bind:touched
-									/>
-								{/key}
 							{:else}
 								<SwipeHabitCard
 									{habit}
 									log={habit.log}
 									{timezone}
 									hideLog
+									active={isCurrent}
+									initialForm={isCurrent ? cardInitialForm : null}
 									fillHeight
 									showEdit={false}
-									busy
+									currentStreak={isCurrent ? currentStreak : null}
+									busy={carouselBusy && isCurrent}
+									stamp={isCurrent ? stamp : null}
+									formPreview={isCurrent ? formPreview : null}
+									bind:actualValue
+									bind:actualTime
+									bind:satisfaction
+									bind:touched
 								/>
 							{/if}
 						</div>

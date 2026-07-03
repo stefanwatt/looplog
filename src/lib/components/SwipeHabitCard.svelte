@@ -30,6 +30,7 @@
 		log = null,
 		timezone,
 		initialForm = null,
+		active = false,
 		busy = false,
 		fillHeight = false,
 		showEdit = true,
@@ -47,6 +48,7 @@
 		timezone: string;
 		hideLog?: boolean;
 		initialForm?: HabitCardForm | null;
+		active?: boolean;
 		busy?: boolean;
 		interactive?: boolean;
 		fillHeight?: boolean;
@@ -62,56 +64,122 @@
 	} = $props();
 
 	let actualTimeMinutes = $state<number | null>(null);
+	let previewValue = $state<number | null>(null);
+	let previewTime = $state('');
+	let previewSatisfaction = $state<number | null>(null);
+	let previewTimeMinutes = $state<number | null>(null);
 
-	$effect(() => {
-		habit.id;
-
-		if (initialForm) {
-			actualValue = initialForm.actualValue;
-			actualTime = initialForm.actualTime;
-			satisfaction = initialForm.satisfaction;
-			touched = initialForm.touched;
-			actualTimeMinutes = actualTime ? parseTimeToMinutes(actualTime) : null;
-			return;
-		}
-
+	function loadFromLog() {
 		if (log != null) {
 			const input = inputFromLog(habit, log, timezone);
-			actualValue =
+			const value =
 				habit.type === 'do_binary' ? (input.actualValue ?? null) : (input.actualValue ?? 0);
-			actualTime = (input.actualTime ?? '').slice(0, 5);
-			satisfaction = input.satisfaction ?? null;
-			touched = true;
-			actualTimeMinutes = actualTime ? parseTimeToMinutes(actualTime) : null;
-			return;
+			const time = (input.actualTime ?? '').slice(0, 5);
+			return {
+				actualValue: value,
+				actualTime: time,
+				satisfaction: input.satisfaction ?? null,
+				touched: true,
+				actualTimeMinutes: time ? parseTimeToMinutes(time) : null
+			};
 		}
 
 		const blank = blankCardForm(habit);
-		actualValue = blank.actualValue;
-		actualTime = blank.actualTime;
-		satisfaction = blank.satisfaction;
-		touched = false;
-		actualTimeMinutes = null;
+		return {
+			actualValue: blank.actualValue,
+			actualTime: blank.actualTime,
+			satisfaction: blank.satisfaction,
+			touched: false,
+			actualTimeMinutes: null as number | null
+		};
+	}
+
+	function applyPreview(form: {
+		actualValue: number | null;
+		actualTime: string;
+		satisfaction: number | null;
+		actualTimeMinutes: number | null;
+	}) {
+		previewValue = form.actualValue;
+		previewTime = form.actualTime;
+		previewSatisfaction = form.satisfaction;
+		previewTimeMinutes = form.actualTimeMinutes;
+	}
+
+	function applyActive(form: {
+		actualValue: number | null;
+		actualTime: string;
+		satisfaction: number | null;
+		touched: boolean;
+		actualTimeMinutes: number | null;
+	}) {
+		actualValue = form.actualValue;
+		actualTime = form.actualTime;
+		satisfaction = form.satisfaction;
+		touched = form.touched;
+		actualTimeMinutes = form.actualTimeMinutes;
+	}
+
+	$effect(() => {
+		habit.id;
+		log;
+
+		if (active) return;
+
+		const form = loadFromLog();
+		applyPreview(form);
 	});
 
 	$effect(() => {
-		if (!formPreview) return;
-		actualValue = formPreview.actualValue;
-		actualTime = formPreview.actualTime;
-		actualTimeMinutes = formPreview.actualTime
-			? parseTimeToMinutes(formPreview.actualTime)
-			: null;
-		satisfaction = formPreview.satisfaction;
-		touched = formPreview.touched;
+		if (!active) return;
+
+		habit.id;
+		initialForm;
+		log;
+
+		if (initialForm) {
+			applyActive({
+				actualValue: initialForm.actualValue,
+				actualTime: initialForm.actualTime,
+				satisfaction: initialForm.satisfaction,
+				touched: initialForm.touched,
+				actualTimeMinutes: initialForm.actualTime
+					? parseTimeToMinutes(initialForm.actualTime)
+					: null
+			});
+			return;
+		}
+
+		const form = loadFromLog();
+		applyActive({ ...form, touched: form.touched });
 	});
 
+	$effect(() => {
+		if (!active || !formPreview) return;
+
+		applyActive({
+			actualValue: formPreview.actualValue,
+			actualTime: formPreview.actualTime,
+			satisfaction: formPreview.satisfaction,
+			touched: formPreview.touched,
+			actualTimeMinutes: formPreview.actualTime
+				? parseTimeToMinutes(formPreview.actualTime)
+				: null
+		});
+	});
+
+	const displayValue = $derived(active ? actualValue : previewValue);
+	const displayTimeMinutes = $derived(active ? actualTimeMinutes : previewTimeMinutes);
+	const displaySatisfaction = $derived(active ? satisfaction : previewSatisfaction);
+	const displayTime = $derived(active ? actualTime : previewTime);
+
 	const previewScore = $derived.by(() => {
-		if (habit.type === 'do_binary') return null;
+		if (!active || habit.type === 'do_binary') return null;
 
 		return calculateAdherence(habit, {
-			actualValue,
-			actualTime: actualTime ? `${actualTime}:00` : null,
-			satisfaction
+			actualValue: displayValue,
+			actualTime: displayTime ? `${displayTime}:00` : null,
+			satisfaction: displaySatisfaction
 		});
 	});
 
@@ -157,10 +225,12 @@
 	});
 
 	function markTouched() {
+		if (!active) return;
 		touched = true;
 	}
 
 	function syncActualTimeFromMinutes() {
+		if (!active) return;
 		actualTime = actualTimeMinutes == null ? '' : minutesToTimeString(actualTimeMinutes);
 		markTouched();
 	}
@@ -169,11 +239,12 @@
 <div
 	class="relative overflow-hidden rounded-2xl border border-surface-0/50 bg-surface-1 shadow-xl shadow-crust/50 {fillHeight
 		? 'flex h-full min-h-0 flex-col'
-		: ''}"
+		: ''} {active ? '' : 'pointer-events-none'}"
 	role="group"
 	aria-label="{habit.name} logging card"
+	aria-hidden={active ? undefined : true}
 >
-	{#if stamp}
+	{#if active && stamp}
 		<CardActionStamp
 			label={CARD_ACTION_STAMPS[stamp].label}
 			variant={CARD_ACTION_STAMPS[stamp].variant}
@@ -240,39 +311,76 @@
 		{/snippet}
 
 		{#if habit.type === 'do_target'}
-			<StepLogInput
-				bind:value={actualValue}
-				step={logStep}
-				baseline={0}
-				min={0}
-				quickOptions={targetQuickOptions}
-				formatDisplay={(value) => String(value)}
-				disabled={busy}
-				inverted
-				ariaLabel="Actual amount for {habit.name}"
-				onselect={markTouched}
-				controlsLeading={previewScore != null ? adherenceScore : undefined}
-				controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
-			/>
+			{#if active}
+				<StepLogInput
+					bind:value={actualValue}
+					step={logStep}
+					baseline={0}
+					min={0}
+					quickOptions={targetQuickOptions}
+					formatDisplay={(value) => String(value)}
+					disabled={busy}
+					inverted
+					ariaLabel="Actual amount for {habit.name}"
+					onselect={markTouched}
+					controlsLeading={previewScore != null ? adherenceScore : undefined}
+					controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
+				/>
+			{:else}
+				<StepLogInput
+					value={displayValue ?? 0}
+					step={logStep}
+					baseline={0}
+					min={0}
+					quickOptions={targetQuickOptions}
+					formatDisplay={(value) => String(value)}
+					disabled
+					inverted
+					ariaLabel="Actual amount for {habit.name}"
+					controlsLeading={previewScore != null ? adherenceScore : undefined}
+					controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
+				/>
+			{/if}
 		{:else if habit.type === 'do_on_time'}
-			<StepLogInput
-				bind:value={actualTimeMinutes}
-				step={logStep}
-				baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
-				min={0}
-				max={24 * 60 - 1}
-				quickOptions={timeQuickOptions}
-				formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
-				disabled={busy}
-				inverted
-				ariaLabel="Actual time for {habit.name}"
-				onselect={syncActualTimeFromMinutes}
-				controlsLeading={previewScore != null ? adherenceScore : undefined}
-				controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
-			/>
+			{#if active}
+				<StepLogInput
+					bind:value={actualTimeMinutes}
+					step={logStep}
+					baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
+					min={0}
+					max={24 * 60 - 1}
+					quickOptions={timeQuickOptions}
+					formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
+					disabled={busy}
+					inverted
+					ariaLabel="Actual time for {habit.name}"
+					onselect={syncActualTimeFromMinutes}
+					controlsLeading={previewScore != null ? adherenceScore : undefined}
+					controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
+				/>
+			{:else}
+				<StepLogInput
+					value={displayTimeMinutes ?? 0}
+					step={logStep}
+					baseline={habit.target_time ? parseTimeToMinutes(habit.target_time) : 0}
+					min={0}
+					max={24 * 60 - 1}
+					quickOptions={timeQuickOptions}
+					formatDisplay={(minutes) => formatTimeLabel(minutesToTimeString(minutes))}
+					disabled
+					inverted
+					ariaLabel="Actual time for {habit.name}"
+					controlsLeading={previewScore != null ? adherenceScore : undefined}
+					controlsTrailing={previewScore != null ? adherenceEmoji : undefined}
+				/>
+			{/if}
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
 			<div class="flex items-center justify-between gap-3">
-				<StarRating bind:value={satisfaction} disabled={busy} inverted onselect={markTouched} />
+				{#if active}
+					<StarRating bind:value={satisfaction} disabled={busy} inverted onselect={markTouched} />
+				{:else}
+					<StarRating value={displaySatisfaction} disabled inverted />
+				{/if}
 				{@render adherenceIndicator()}
 			</div>
 		{:else if habit.type === 'do_binary'}
