@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { HabitLog, HabitWithLog } from '$lib/database.types';
-import { buildAnytimeHabitStack, buildFocusStack, buildTimedHabitStack, orderedPendingTimedHabits } from './service';
+import { buildAnytimeHabitStack, buildFocusCarousel, buildFocusStack, buildTimedHabitStack, orderedPendingTimedHabits } from './service';
 
 const timezone = 'UTC';
 
@@ -224,6 +224,72 @@ describe('buildAnytimeHabitStack', () => {
 		const stack = buildAnytimeHabitStack(habits, { focusHabitId: 'a' });
 
 		expect(stack.map((h) => h.id)).toEqual(['a', 'b']);
+	});
+});
+
+describe('buildFocusCarousel', () => {
+	test('includes all active habits for the day when filter is all', () => {
+		const afternoonLog: HabitLog = {
+			id: 'log-1',
+			habit_id: 'afternoon',
+			user_id: 'user',
+			log_date: '2025-06-27',
+			status: 'logged',
+			actual_value: 1,
+			actual_time: null,
+			satisfaction: null,
+			adherence_score: 100,
+			created_at: '',
+			updated_at: ''
+		};
+
+		const timed = [
+			habit('morning', 'Brush Teeth (Morning)', '08:00'),
+			{ ...habit('afternoon', 'Walk', '12:00'), log: afternoonLog },
+			habit('evening', 'Brush Teeth (Evening)', '17:00')
+		];
+		const anytime = [anytimeHabit('water', 'Drink Water')];
+
+		const carousel = buildFocusCarousel(timed, anytime, { filter: 'all' });
+
+		expect(carousel.habits.map((h) => h.id)).toEqual(['morning', 'afternoon', 'evening', 'water']);
+		expect(carousel.initialIndex).toBe(0);
+	});
+
+	test('starts at focused habit index even when logged', () => {
+		const logged: HabitLog = {
+			id: 'log-1',
+			habit_id: 'water',
+			user_id: 'user',
+			log_date: '2025-06-27',
+			status: 'logged',
+			actual_value: 4,
+			actual_time: null,
+			satisfaction: null,
+			adherence_score: 50,
+			created_at: '',
+			updated_at: ''
+		};
+
+		const timed = [habit('evening', 'Brush Teeth (Evening)', '17:00')];
+		const anytime = [{ ...anytimeHabit('water', 'Drink Water'), log: logged }];
+
+		const carousel = buildFocusCarousel(timed, anytime, {
+			filter: 'all',
+			focusHabitId: 'water'
+		});
+
+		expect(carousel.habits.map((h) => h.id)).toEqual(['evening', 'water']);
+		expect(carousel.initialIndex).toBe(1);
+	});
+
+	test('returns only anytime habits when filter is anytime', () => {
+		const timed = [habit('evening', 'Brush Teeth (Evening)', '17:00')];
+		const anytime = [anytimeHabit('water', 'Drink Water'), anytimeHabit('stretch', 'Stretch')];
+
+		const carousel = buildFocusCarousel(timed, anytime, { filter: 'anytime' });
+
+		expect(carousel.habits.map((h) => h.id)).toEqual(['water', 'stretch']);
 	});
 });
 

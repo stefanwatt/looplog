@@ -17,17 +17,23 @@
 		"icons": "magick assets/logo.png -resize 512x512 static/icon-512.png && magick assets/logo.png -resize 192x192 static/icon-192.png && magick assets/logo.png -resize 180x180 static/apple-touch-icon.png && magick assets/logo.png -resize 32x32 static/favicon-32.png"
 	},
 	"devDependencies": {
+		"@internationalized/date": "^3.12.0",
+		"@lucide/svelte": "^1.23.0",
 		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.3.0",
+		"bits-ui": "^2.18.1",
+		"clsx": "^2.1.1",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
+		"tailwind-merge": "^3.6.0",
+		"tailwind-variants": "^3.2.2",
 		"tailwindcss": "^4.3.0",
 		"typescript": "^6.0.3",
 		"vite": "^8.0.16",
@@ -37,6 +43,8 @@
 		"@jamescoyle/svelte-icon": "^0.1.1",
 		"@mdi/js": "^7.4.47",
 		"@supabase/ssr": "^0.12.0",
-		"@supabase/supabase-js": "^2.108.2"
+		"@supabase/supabase-js": "^2.108.2",
+		"embla-carousel": "^8.6.0",
+		"embla-carousel-svelte": "^8.6.0"
 	}
 }

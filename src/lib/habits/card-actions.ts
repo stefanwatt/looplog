@@ -104,7 +104,7 @@ export function canCheckHabit(habit: Habit, form: HabitCardForm): boolean {
 			return form.touched && Boolean(form.actualTime);
 		case 'avoid':
 		case 'rate':
-			return form.touched && form.satisfaction != null && form.satisfaction >= 1;
+			return form.touched && form.satisfaction != null && form.satisfaction >= 0;
 	}
 }
 

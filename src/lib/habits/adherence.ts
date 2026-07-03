@@ -130,7 +130,7 @@ export function canSubmitLog(
 			return input.actualValue === 0 || input.actualValue === 1;
 		case 'avoid':
 		case 'rate':
-			return input.satisfaction != null && input.satisfaction >= 1 && input.satisfaction <= 5;
+			return input.satisfaction != null && input.satisfaction >= 0 && input.satisfaction <= 5;
 	}
 }
 

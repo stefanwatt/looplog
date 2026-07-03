@@ -2,9 +2,9 @@ import { canSkipToday } from '$lib/habits/adherence';
 import type { Habit, HabitLog, HabitWithLog } from '$lib/database.types';
 import { dayViewsFromData, type LoadedDayData } from '$lib/habits/load-day';
 import {
-	buildFocusStack,
-	hasCatchUpHabits,
+	buildFocusCarousel,
 	listLogsForDates,
+	pendingHabitCount,
 	recentLogsMapFromRecord
 } from '$lib/habits/service';
 import type { HabitFilter } from '$lib/habits/filter';
@@ -90,20 +90,19 @@ class DayStore {
 		return canSkipToday(habit, this.recentLogsByHabit.get(habit.id) ?? [], dateKey);
 	}
 
-	focusStackFor(options: {
+	focusCarouselFor(options: {
 		dateKey?: string;
 		focusHabitId?: string | null;
-		catchUp?: boolean;
 		filter?: HabitFilter;
-		now?: Date;
 	}) {
 		const dateKey = options.dateKey ?? this.todayDateKey;
 		if (!this.ready || !dateKey) {
 			return {
-				upcomingHabits: [],
+				habits: [],
+				initialIndex: 0,
 				doneCount: 0,
 				totalCount: 0,
-				catchUpAvailable: false,
+				pendingCounts: { all: 0, timed: 0, anytime: 0 },
 				canSkip: false
 			};
 		}
@@ -111,13 +110,9 @@ class DayStore {
 		const filter = options.filter ?? 'all';
 		const timed = this.timedHabitsFor(dateKey);
 		const anytime = this.anytimeHabitsFor(dateKey);
-		const now = options.now ?? new Date();
-		const upcomingHabits = buildFocusStack(timed, anytime, {
+		const { habits, initialIndex } = buildFocusCarousel(timed, anytime, {
 			filter,
-			timezone: this.timezone,
-			focusHabitId: options.focusHabitId,
-			catchUp: options.catchUp,
-			now
+			focusHabitId: options.focusHabitId
 		});
 
 		const timedDone = timed.filter((habit) => habit.log).length;
@@ -134,18 +129,19 @@ class DayStore {
 				: filter === 'anytime'
 					? anytime.length
 					: timed.length + anytime.length;
-		const catchUpAvailable =
-			(filter === 'all' || filter === 'timed') &&
-			!options.catchUp &&
-			hasCatchUpHabits(timed, now, this.timezone);
-		const currentHabit = upcomingHabits[0] ?? null;
+		const currentHabit = habits[initialIndex] ?? habits[0] ?? null;
 		const anytimeById = new Map(anytime.map((habit) => [habit.id, habit]));
 
 		return {
-			upcomingHabits,
+			habits,
+			initialIndex,
 			doneCount,
 			totalCount,
-			catchUpAvailable,
+			pendingCounts: {
+				all: pendingHabitCount([...timed, ...anytime]),
+				timed: pendingHabitCount(timed),
+				anytime: pendingHabitCount(anytime)
+			},
 			canSkip: currentHabit
 				? currentHabit.anchor_time != null
 					? this.canSkipHabit(currentHabit, dateKey)

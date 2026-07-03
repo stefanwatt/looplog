@@ -6,6 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDayStore } from '$lib/habits/day.svelte';
 	import { parseHabitFilter, tabHref, type HabitFilter } from '$lib/habits/filter';
+	import { pendingHabitCount } from '$lib/habits/service';
 	import { shiftDateKey } from '$lib/habits/schedule';
 	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
 
@@ -25,6 +26,11 @@
 	const showAnytimeHeading = $derived(
 		filter === 'all' && anytimeHabits.length > 0 && timedHabits.length > 0
 	);
+	const pendingCounts = $derived({
+		all: pendingHabitCount([...timedHabits, ...anytimeHabits]),
+		timed: pendingHabitCount(timedHabits),
+		anytime: pendingHabitCount(anytimeHabits)
+	});
 
 	$effect(() => {
 		day.setViewDateKey(viewDateKey);
@@ -79,7 +85,7 @@
 		</div>
 
 		<div class="mt-4">
-			<HabitFilterToggle value={filter} onchange={setFilter} />
+			<HabitFilterToggle value={filter} {pendingCounts} onchange={setFilter} />
 		</div>
 	</header>
 

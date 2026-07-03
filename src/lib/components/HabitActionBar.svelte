@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import { mdiCheck, mdiClose, mdiSkipNext, mdiTrophy, mdiUndo } from '@mdi/js';
+	import { mdiClose, mdiNotebookEditOutline, mdiSkipNext, mdiTrophy, mdiUndo } from '@mdi/js';
 
 	let {
 		canUndo = false,
@@ -67,10 +67,10 @@
 		type="button"
 		class="{mainButtonClass} size-14 border-green/40 bg-green/10 text-green"
 		disabled={busy || !canCheck}
-		aria-label="Did it"
+		aria-label="Log"
 		onclick={() => oncheck?.()}
 	>
-		<Icon path={mdiCheck} size={28} />
+		<Icon path={mdiNotebookEditOutline} size={26} />
 	</button>
 
 	<button

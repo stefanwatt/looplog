@@ -3,16 +3,24 @@
 
 	let {
 		value,
+		pendingCounts,
 		onchange
 	}: {
 		value: HabitFilter;
+		pendingCounts?: Partial<Record<HabitFilter, number>>;
 		onchange: (filter: HabitFilter) => void;
 	} = $props();
 
 	const buttonClass = (active: boolean) =>
-		`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+		`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
 			active ? 'bg-surface-0 text-text shadow-sm' : 'text-subtext-0'
 		}`;
+
+	function label(option: (typeof habitFilterOptions)[number]) {
+		const pending = pendingCounts?.[option.value];
+		if (pending == null || pending <= 0) return option.label;
+		return `${option.label} · ${pending}`;
+	}
 </script>
 
 <div
@@ -27,7 +35,7 @@
 			aria-pressed={value === option.value}
 			onclick={() => onchange(option.value)}
 		>
-			{option.label}
+			{label(option)}
 		</button>
 	{/each}
 </div>

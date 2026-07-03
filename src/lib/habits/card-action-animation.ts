@@ -27,7 +27,7 @@ export type CardActionStampConfig = {
 
 export const CARD_ACTION_STAMPS: Record<CardActionStampType, CardActionStampConfig> = {
 	'nailed-it': { label: 'Nailed it', variant: 'yellow', exitDirection: 'right' },
-	success: { label: 'Success', variant: 'green', exitDirection: 'right' },
+	success: { label: 'Logged', variant: 'green', exitDirection: 'right' },
 	failure: { label: 'Failure', variant: 'red', exitDirection: 'left' }
 };
 

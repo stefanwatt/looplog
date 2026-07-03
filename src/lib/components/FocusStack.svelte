@@ -7,87 +7,53 @@
 		skipHabit,
 		type HabitLogPayload
 	} from '$lib/habits/log-actions';
-	import { SvelteSet } from 'svelte/reactivity';
 
 	let {
-		upcomingHabits,
+		habits,
+		initialIndex = 0,
 		timezone,
-		canSkip,
-		initialDoneCount,
 		dateKey,
-		doneCount = $bindable(0),
-		stackEmpty = $bindable(true),
-		undoAvailable = $bindable(false)
+		onnavigate
 	}: {
-		upcomingHabits: HabitWithLog[];
+		habits: HabitWithLog[];
+		initialIndex?: number;
 		timezone: string;
-		canSkip: boolean;
-		initialDoneCount: number;
 		dateKey: string;
-		doneCount?: number;
-		stackEmpty?: boolean;
-		undoAvailable?: boolean;
+		onnavigate?: () => void;
 	} = $props();
 
-	let dismissedIds = new SvelteSet<string>();
-	let doneDelta = $state(0);
 	let error = $state('');
 
-	const stackHabits = $derived(upcomingHabits.filter((habit) => !dismissedIds.has(habit.id)));
-
-	$effect(() => {
-		doneCount = initialDoneCount + doneDelta;
-	});
-
-	$effect(() => {
-		stackEmpty = stackHabits.length === 0;
-	});
-
-	function dismiss(habitId: string) {
-		dismissedIds.add(habitId);
-		doneDelta += 1;
-		error = '';
-	}
-
-	function restore(habitId: string) {
-		if (!dismissedIds.has(habitId)) return;
-		dismissedIds.delete(habitId);
-		doneDelta -= 1;
-	}
-
 	function handleLog(habit: HabitWithLog, payload: HabitLogPayload) {
-		dismiss(habit.id);
+		error = '';
 		void logHabit(habit, dateKey, payload).catch((err) => {
-			restore(habit.id);
 			error = err instanceof Error ? err.message : 'Could not save log';
 		});
 	}
 
 	function handleSkip(habit: HabitWithLog) {
-		dismiss(habit.id);
+		error = '';
 		void skipHabit(habit, dateKey).catch((err) => {
-			restore(habit.id);
 			error = err instanceof Error ? err.message : 'Could not skip habit';
 		});
 	}
 
 	function handleUndo(habit: HabitWithLog) {
-		restore(habit.id);
+		error = '';
 		void resetHabitLog(habit.id, dateKey).catch((err) => {
-			dismiss(habit.id);
 			error = err instanceof Error ? err.message : 'Could not undo log';
 		});
 	}
 </script>
 
-{#if stackHabits.length > 0 || undoAvailable}
+{#if habits.length > 0}
 	<div class="flex min-h-0 flex-1 flex-col">
 		<HabitCardStack
-			habits={stackHabits}
+			{habits}
+			{initialIndex}
 			{timezone}
 			{dateKey}
-			{canSkip}
-			bind:undoAvailable
+			{onnavigate}
 			onlog={handleLog}
 			onskip={handleSkip}
 			onundo={handleUndo}

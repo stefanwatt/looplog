@@ -67,15 +67,15 @@
 <div class="grid gap-3">
 	<SwipeHabitCard
 		{habit}
+		log={habit.log}
 		{timezone}
 		hideLog
+		interactive={false}
 		{busy}
 		bind:actualValue
 		bind:actualTime
 		bind:satisfaction
 		bind:touched
-		onfail={handleFail}
-		oncheck={handleCheck}
 	/>
 	<HabitActionBar
 		canSkip={canSkip}

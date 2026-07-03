@@ -14,53 +14,47 @@
 		type HabitCardForm
 	} from '$lib/habits/card-actions';
 	import {
-		CARD_ACTION_STAMPS,
-		CARD_EXIT_MS,
-		CARD_EXIT_SWIPE_PX,
 		CARD_STAMP_HOLD_MS,
-		cardStackBehindTransform,
-		cardStackDragProgress,
 		type CardActionStampType,
 		wait
 	} from '$lib/habits/card-action-animation';
 	import HabitActionBar from '$lib/components/HabitActionBar.svelte';
-	import FocusStackEmptyState from '$lib/components/FocusStackEmptyState.svelte';
-	import HabitCardPlaceholder from '$lib/components/HabitCardPlaceholder.svelte';
 	import SwipeHabitCard from '$lib/components/SwipeHabitCard.svelte';
+	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import type { CarouselAPI } from '$lib/components/ui/carousel/context.js';
 	import { getDayStore } from '$lib/habits/day.svelte';
 	import { computeHabitCurrentStreak } from '$lib/habits/stats';
 
 	type UndoEntry = {
 		habit: HabitWithLog;
 		form: HabitCardForm;
-		canSkip: boolean;
 	};
 
 	let {
 		habits,
+		initialIndex = 0,
 		timezone,
 		dateKey,
-		canSkip = false,
 		busy = false,
-		undoAvailable = $bindable(false),
+		onnavigate,
 		onlog,
 		onskip,
 		onundo
 	}: {
 		habits: HabitWithLog[];
+		initialIndex?: number;
 		timezone: string;
 		dateKey: string;
-		canSkip?: boolean;
 		busy?: boolean;
-		undoAvailable?: boolean;
+		onnavigate?: () => void;
 		onlog: (habit: HabitWithLog, payload: HabitLogPayload) => void;
 		onskip?: (habit: HabitWithLog) => void;
 		onundo?: (habit: HabitWithLog) => void;
 	} = $props();
 
-	let dragX = $state(0);
-	let dragging = $state(false);
-	let lastDismissed = $state<UndoEntry | null>(null);
+	let currentIndex = $state(0);
+	let emblaApi = $state<CarouselAPI | undefined>();
+	let lastLogged = $state<UndoEntry | null>(null);
 	let undoRestore = $state<UndoEntry | null>(null);
 
 	let actualValue = $state<number | null>(null);
@@ -70,18 +64,15 @@
 	let animating = $state(false);
 	let stamp = $state<CardActionStampType | null>(null);
 	let formPreview = $state<HabitCardForm | null>(null);
-	let behindLayerEls = $state<Record<string, HTMLDivElement>>({});
-
-	const displayHabits = $derived.by(() => {
-		const restore = undoRestore;
-		if (!restore) return habits;
-		const rest = habits.filter((habit) => habit.id !== restore.habit.id);
-		return [restore.habit, ...rest];
-	});
-
-	const currentHabit = $derived(displayHabits[0] ?? null);
 
 	const day = getDayStore();
+
+	const carouselResetKey = $derived(
+		`${habits.map((habit) => habit.id).join('|')}#${initialIndex}`
+	);
+	const startIndex = $derived(Math.min(initialIndex, Math.max(habits.length - 1, 0)));
+	const habitCount = $derived(habits.length);
+	const currentHabit = $derived(habits[currentIndex] ?? null);
 
 	function habitLogsForStreak(habitId: string) {
 		const recent = day.recentLogsByHabit.get(habitId) ?? [];
@@ -112,73 +103,23 @@
 
 	const currentCanSkip = $derived.by(() => {
 		if (!currentHabit) return false;
-		if (undoRestore?.habit.id === currentHabit.id) return undoRestore.canSkip;
-		if (currentHabit.id === habits[0]?.id) return canSkip;
-		return currentHabit.allow_skip;
+		return day.canSkipHabit(currentHabit, dateKey);
 	});
 
 	const canCheck = $derived(currentHabit ? canCheckHabit(currentHabit, currentForm) : false);
 	const canNailItAction = $derived(currentHabit ? canNailIt(currentHabit) : false);
-	const canUndo = $derived(lastDismissed != null);
-
-	$effect(() => {
-		undoAvailable = canUndo;
-	});
-
-	$effect(() => {
-		currentHabit?.id;
-		dragX = 0;
-		dragging = false;
-	});
+	const canUndo = $derived(lastLogged != null);
+	const carouselBusy = $derived(busy || animating);
 
 	const cardInitialForm = $derived(
 		undoRestore?.habit.id === currentHabit?.id ? undoRestore.form : null
 	);
 
-	const PEEK_PX = 16;
-	const SCALE_STEP = 0.05;
-
-	const dragProgress = $derived(cardStackDragProgress(dragX));
-	const behindHabits = $derived(displayHabits.slice(1, 3));
-	const stackPadding = $derived(behindHabits.length * PEEK_PX);
-
-	function bindBehindLayer(node: HTMLDivElement, habitId: string) {
-		behindLayerEls = { ...behindLayerEls, [habitId]: node };
-		return {
-			destroy() {
-				const next = { ...behindLayerEls };
-				delete next[habitId];
-				behindLayerEls = next;
-			}
-		};
-	}
-
-	function behindTransform(depth: number, progress: number) {
-		const effectiveDepth = depth - progress;
-		const translateY = effectiveDepth * PEEK_PX;
-		const scale = 1 - effectiveDepth * SCALE_STEP;
-		return cardStackBehindTransform(translateY, scale);
-	}
-
-	function handleDragFrame(x: number) {
-		const progress = cardStackDragProgress(x);
-		for (let i = 0; i < behindHabits.length; i++) {
-			const el = behindLayerEls[behindHabits[i].id];
-			if (!el) continue;
-			el.style.transform = behindTransform(i + 1, progress);
-		}
-	}
-
-	function handleDragEnd() {
-		const progress = cardStackDragProgress(dragX);
-		for (let i = 0; i < behindHabits.length; i++) {
-			const el = behindLayerEls[behindHabits[i].id];
-			if (!el) continue;
-			el.style.transform = behindTransform(i + 1, progress);
-		}
-	}
-
-	const promoteBehindLayers = $derived(dragging || animating || dragProgress > 0);
+	$effect(() => {
+		carouselResetKey;
+		emblaApi = undefined;
+		currentIndex = startIndex;
+	});
 
 	function snapshotForm(): HabitCardForm {
 		return {
@@ -189,8 +130,40 @@
 		};
 	}
 
+	function handleEmblaSelect() {
+		if (!emblaApi) return;
+		const nextIndex = emblaApi.selectedScrollSnap();
+		if (nextIndex === currentIndex) return;
+		currentIndex = nextIndex;
+		undoRestore = null;
+		onnavigate?.();
+	}
+
+	function handleEmblaInit(api: CarouselAPI | undefined) {
+		emblaApi = api;
+		if (!api) return;
+		currentIndex = api.selectedScrollSnap();
+	}
+
+	$effect(() => {
+		if (!emblaApi) return;
+		emblaApi.on('select', handleEmblaSelect);
+		return () => {
+			emblaApi?.off('select', handleEmblaSelect);
+		};
+	});
+
+	$effect(() => {
+		if (!emblaApi) return;
+		emblaApi.reInit({
+			loop: habitCount > 1,
+			watchDrag: !carouselBusy,
+			align: 'start'
+		});
+	});
+
 	function handleFail() {
-		if (!currentHabit || busy || animating) return;
+		if (!currentHabit || carouselBusy) return;
 		void runLogAnimation({
 			stamp: 'failure',
 			formPreview: failForm(currentHabit),
@@ -199,7 +172,7 @@
 	}
 
 	function handleCheck() {
-		if (!currentHabit || busy || animating || !canCheck) return;
+		if (!currentHabit || carouselBusy || !canCheck) return;
 		void runLogAnimation({
 			stamp: 'success',
 			formPreview: checkForm(currentHabit, currentForm),
@@ -208,7 +181,7 @@
 	}
 
 	function handleNailedIt() {
-		if (!currentHabit || busy || animating || !canNailItAction) return;
+		if (!currentHabit || carouselBusy || !canNailItAction) return;
 		void runLogAnimation({
 			stamp: 'nailed-it',
 			formPreview: nailedItForm(currentHabit, timezone),
@@ -227,15 +200,12 @@
 	}) {
 		if (!currentHabit) return;
 
-		const config = CARD_ACTION_STAMPS[stampType];
 		const entry: UndoEntry = {
 			habit: currentHabit,
-			form: snapshotForm(),
-			canSkip: currentCanSkip
+			form: snapshotForm()
 		};
 
 		animating = true;
-		dragging = false;
 		formPreview = preview;
 		stamp = stampType;
 		await tick();
@@ -243,15 +213,7 @@
 		const holdMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : CARD_STAMP_HOLD_MS;
 		await wait(holdMs);
 
-		dragging = false;
-		dragX = 0;
-		await tick();
-
-		dragX = config.exitDirection === 'right' ? CARD_EXIT_SWIPE_PX : -CARD_EXIT_SWIPE_PX;
-		const exitMs = matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : CARD_EXIT_MS;
-		await wait(exitMs);
-
-		lastDismissed = entry;
+		lastLogged = entry;
 		undoRestore = null;
 		complete(currentHabit);
 
@@ -261,97 +223,106 @@
 	}
 
 	function handleSkip() {
-		if (!currentHabit || busy || animating || !currentCanSkip || !onskip) return;
-		const entry: UndoEntry = {
+		if (!currentHabit || carouselBusy || !currentCanSkip || !onskip) return;
+		lastLogged = {
 			habit: currentHabit,
-			form: snapshotForm(),
-			canSkip: currentCanSkip
+			form: snapshotForm()
 		};
-		lastDismissed = entry;
 		undoRestore = null;
 		onskip(currentHabit);
 	}
 
 	function handleUndo() {
-		if (!lastDismissed) return;
-		undoRestore = lastDismissed;
-		onundo?.(lastDismissed.habit);
-		lastDismissed = null;
+		if (!lastLogged) return;
+		undoRestore = lastLogged;
+		onundo?.(lastLogged.habit);
+		lastLogged = null;
 	}
 </script>
 
-{#if currentHabit || canUndo}
-	<div class="flex h-full min-h-0 flex-col">
-		<div class="relative min-h-0 flex-1" style:margin-bottom={currentHabit ? `${stackPadding}px` : undefined}>
-			{#if currentHabit}
-				{#each behindHabits as habit, i (habit.id)}
-					{@const depth = i + 1}
-					<div
-						use:bindBehindLayer={habit.id}
-						class="pointer-events-none absolute inset-0 origin-bottom"
-						style:transform={dragging ? undefined : behindTransform(depth, dragProgress)}
-						style:z-index={10 - depth}
-						style:transition={dragging ? 'none' : 'transform 200ms ease-out'}
-						style:will-change={promoteBehindLayers ? 'transform' : undefined}
-					>
-						{#if depth === 1}
-							<SwipeHabitCard
-								habit={habit}
-								{timezone}
-								hideLog
-								fillHeight
-								showEdit={false}
-								interactive={false}
-							/>
-						{:else}
-							<HabitCardPlaceholder />
-						{/if}
-					</div>
+<div class="flex h-full min-h-0 flex-col">
+	{#key carouselResetKey}
+		<Carousel.Root
+			class="min-h-0 flex-1 touch-pan-y"
+			aria-label="Habit carousel"
+			opts={{
+				loop: habitCount > 1,
+				startIndex,
+				watchDrag: !carouselBusy,
+				align: 'start'
+			}}
+			setApi={handleEmblaInit}
+		>
+			<Carousel.Content class="h-full min-h-0 -ms-0">
+				{#each habits as habit, index (habit.id)}
+					{@const isCurrent = index === currentIndex}
+					<Carousel.Item class="h-full ps-0">
+						<div class="h-full min-h-0">
+							{#if isCurrent}
+								{#key `${habit.id}-${undoRestore?.habit.id === habit.id ? 'undo' : 'live'}`}
+									<SwipeHabitCard
+										{habit}
+										log={habit.log}
+										{timezone}
+										hideLog
+										initialForm={cardInitialForm}
+										fillHeight
+										showEdit={false}
+										{currentStreak}
+										busy={carouselBusy}
+										{stamp}
+										{formPreview}
+										bind:actualValue
+										bind:actualTime
+										bind:satisfaction
+										bind:touched
+									/>
+								{/key}
+							{:else}
+								<SwipeHabitCard
+									{habit}
+									log={habit.log}
+									{timezone}
+									hideLog
+									fillHeight
+									showEdit={false}
+									busy
+								/>
+							{/if}
+						</div>
+					</Carousel.Item>
 				{/each}
+			</Carousel.Content>
+		</Carousel.Root>
+	{/key}
 
-				<div class="relative z-10 h-full min-h-0">
-					{#key `${currentHabit.id}-${undoRestore?.habit.id === currentHabit.id ? 'undo' : 'live'}`}
-						<SwipeHabitCard
-							habit={currentHabit}
-							{timezone}
-							hideLog
-							initialForm={cardInitialForm}
-							fillHeight
-							showEdit={false}
-							{currentStreak}
-							busy={busy || animating}
-							interactive={!animating}
-							{stamp}
-							{formPreview}
-							bind:dragX
-							bind:dragging
-							bind:actualValue
-							bind:actualTime
-							bind:satisfaction
-							bind:touched
-							ondragframe={handleDragFrame}
-							ondragend={handleDragEnd}
-							onfail={handleFail}
-							oncheck={handleCheck}
-						/>
-					{/key}
-				</div>
-			{:else}
-				<FocusStackEmptyState message="Nothing else in focus right now." />
-			{/if}
+	{#if habitCount > 1}
+		<div
+			class="flex shrink-0 items-center justify-center gap-1.5 py-2"
+			role="status"
+			aria-label="Habit {currentIndex + 1} of {habitCount}"
+		>
+			{#each habits as _, index (index)}
+				<span
+					class="rounded-full transition-all duration-200 {index === currentIndex
+						? 'h-1.5 w-4 bg-blue'
+						: 'size-1.5 bg-surface-2'}"
+					aria-hidden="true"
+				></span>
+			{/each}
 		</div>
+	{/if}
 
-		<HabitActionBar
-			{canUndo}
-			canSkip={currentCanSkip}
-			{canCheck}
-			canNailIt={canNailItAction}
-			busy={busy || animating}
-			onundo={handleUndo}
-			onfail={handleFail}
-			onnailedit={handleNailedIt}
-			oncheck={handleCheck}
-			onskip={handleSkip}
-		/>
-	</div>
-{/if}
+	<HabitActionBar
+		{canUndo}
+		canSkip={currentCanSkip}
+		{canCheck}
+		canNailIt={canNailItAction}
+		busy={carouselBusy}
+		onundo={handleUndo}
+		onfail={handleFail}
+		onnailedit={handleNailedIt}
+		oncheck={handleCheck}
+		onskip={handleSkip}
+	/>
+</div>

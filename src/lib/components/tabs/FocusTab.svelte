@@ -12,24 +12,13 @@
 	const dateKey = $derived(page.url.searchParams.get('date') ?? day.todayDateKey);
 	const filter = $derived(parseHabitFilter(page.url.searchParams.get('filter')));
 
-	const stack = $derived.by(() =>
-		day.focusStackFor({
+	const carousel = $derived.by(() =>
+		day.focusCarouselFor({
 			dateKey,
 			focusHabitId: page.url.searchParams.get('habitId'),
-			catchUp: page.url.searchParams.get('catchUp') === '1',
 			filter
 		})
 	);
-
-	const catchUpHref = $derived.by(() => {
-		if (!stack.catchUpAvailable) return null;
-		return tabHref('/focus', {
-			date: dateKey,
-			filter,
-			catchUp: true,
-			todayDateKey: day.todayDateKey
-		});
-	});
 
 	const progressLabel = $derived.by(() => {
 		if (filter === 'timed') return 'timed habits done';
@@ -37,13 +26,9 @@
 		return 'habits done';
 	});
 
-	let undoAvailable = $state(false);
-	let doneCount = $state(0);
-	let stackEmpty = $state(true);
-
-	$effect.pre(() => {
-		doneCount = stack.doneCount;
-		stackEmpty = stack.upcomingHabits.length === 0;
+	$effect(() => {
+		day.setViewDateKey(dateKey);
+		void day.ensureDateLoaded(dateKey);
 	});
 
 	function setFilter(nextFilter: HabitFilter) {
@@ -52,7 +37,18 @@
 			tabHref('/focus', {
 				date: dateKey,
 				filter: nextFilter,
-				habitId: page.url.searchParams.get('habitId') ?? undefined,
+				todayDateKey: day.todayDateKey
+			}),
+			{ invalidateAll: false, keepFocus: true, noScroll: true }
+		);
+	}
+
+	function clearFocusHabitId() {
+		if (!page.url.searchParams.get('habitId')) return;
+		goto(
+			tabHref('/focus', {
+				date: dateKey,
+				filter,
 				todayDateKey: day.todayDateKey
 			}),
 			{ invalidateAll: false, keepFocus: true, noScroll: true }
@@ -68,47 +64,41 @@
 	<header class="shrink-0">
 		<div class="mb-3 flex items-baseline justify-between gap-3">
 			<h1 class="m-0 text-2xl font-bold">Focus</h1>
-			<p class="m-0 text-subtext-0">
-				{doneCount} / {stack.totalCount} {progressLabel}
-			</p>
+			<div class="text-right text-sm text-subtext-1">
+				<p class="m-0 tabular-nums">{dateKey}</p>
+				<p class="m-0 text-subtext-0">
+					{carousel.doneCount} / {carousel.totalCount} {progressLabel}
+				</p>
+			</div>
 		</div>
 		<div class="mb-3">
-			<HabitFilterToggle value={filter} onchange={setFilter} />
+			<HabitFilterToggle
+				value={filter}
+				pendingCounts={carousel.pendingCounts}
+				onchange={setFilter}
+			/>
 		</div>
 	</header>
 
 	<FocusStack
-		upcomingHabits={stack.upcomingHabits}
+		habits={carousel.habits}
+		initialIndex={carousel.initialIndex}
 		timezone={day.timezone}
-		canSkip={stack.canSkip}
-		initialDoneCount={stack.doneCount}
 		{dateKey}
-		bind:doneCount
-		bind:undoAvailable
-		bind:stackEmpty
+		onnavigate={clearFocusHabitId}
 	/>
 
-	{#if stackEmpty && stack.upcomingHabits.length === 0}
-		{#if stack.totalCount === 0}
-			<FocusStackEmptyState
-				message={filter === 'anytime'
-					? 'No anytime habits for today.'
-					: filter === 'timed'
-						? 'No timed habits for today.'
-						: 'No habits for today.'}
-			>
-				{#snippet actions()}
-					<a href="/habits/new" class="mt-3 text-blue">Create a habit</a>
-				{/snippet}
-			</FocusStackEmptyState>
-		{:else if catchUpHref}
-			<FocusStackEmptyState message="You have unlogged habits from earlier today.">
-				{#snippet actions()}
-					<a href={catchUpHref} class="mt-3 text-blue">View catch-up habits</a>
-				{/snippet}
-			</FocusStackEmptyState>
-		{:else}
-			<FocusStackEmptyState message="Nothing to log right now." />
-		{/if}
+	{#if carousel.habits.length === 0}
+		<FocusStackEmptyState
+			message={filter === 'anytime'
+				? 'No anytime habits for today.'
+				: filter === 'timed'
+					? 'No timed habits for today.'
+					: 'No habits for today.'}
+		>
+			{#snippet actions()}
+				<a href="/habits/new" class="mt-3 text-blue">Create a habit</a>
+			{/snippet}
+		</FocusStackEmptyState>
 	{/if}
 </section>

@@ -354,6 +354,58 @@ export function buildFocusStack(
 	return [...timedStack, ...anytimeStack];
 }
 
+export function orderedTimedHabitsForCarousel(habits: HabitWithLog[]): HabitWithLog[] {
+	return [...habits]
+		.filter((habit) => habit.anchor_time != null)
+		.sort((a, b) => (a.anchor_time ?? '').localeCompare(b.anchor_time ?? ''));
+}
+
+export function orderedAnytimeHabitsForCarousel(habits: HabitWithLog[]): HabitWithLog[] {
+	return [...habits]
+		.filter((habit) => habit.anchor_time == null)
+		.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function pendingHabitCount(habits: HabitWithLog[]): number {
+	return habits.filter((habit) => !habit.log).length;
+}
+
+export type FocusCarouselResult = {
+	habits: HabitWithLog[];
+	initialIndex: number;
+};
+
+export function buildFocusCarousel(
+	timedHabits: HabitWithLog[],
+	anytimeHabits: HabitWithLog[],
+	options: {
+		filter?: FocusHabitFilter;
+		focusHabitId?: string | null;
+	} = {}
+): FocusCarouselResult {
+	const { filter = 'all', focusHabitId } = options;
+
+	let habits: HabitWithLog[];
+	if (filter === 'timed') {
+		habits = orderedTimedHabitsForCarousel(timedHabits);
+	} else if (filter === 'anytime') {
+		habits = orderedAnytimeHabitsForCarousel(anytimeHabits);
+	} else {
+		habits = [
+			...orderedTimedHabitsForCarousel(timedHabits),
+			...orderedAnytimeHabitsForCarousel(anytimeHabits)
+		];
+	}
+
+	let initialIndex = 0;
+	if (focusHabitId) {
+		const index = habits.findIndex((habit) => habit.id === focusHabitId);
+		if (index >= 0) initialIndex = index;
+	}
+
+	return { habits, initialIndex };
+}
+
 export async function getHabit(client: Client, userId: string, habitId: string) {
 	const { data, error } = await client
 		.from('habits')
