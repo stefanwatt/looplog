@@ -42,6 +42,7 @@
 
 	const canCheck = $derived(canCheckHabit(habit, currentForm));
 	const canNailItAction = $derived(canNailIt(habit));
+	const hasExistingLog = $derived(habit.log?.status === 'logged');
 
 	async function handleFail() {
 		if (busy) return;
@@ -81,6 +82,7 @@
 		canSkip={canSkip}
 		{canCheck}
 		canNailIt={canNailItAction}
+		{hasExistingLog}
 		{busy}
 		onfail={handleFail}
 		onnailedit={handleNailedIt}

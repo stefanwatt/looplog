@@ -7,6 +7,7 @@
 		canSkip = false,
 		canCheck = false,
 		canNailIt = false,
+		hasExistingLog = false,
 		busy = false,
 		onundo,
 		onfail,
@@ -18,6 +19,7 @@
 		canSkip?: boolean;
 		canCheck?: boolean;
 		canNailIt?: boolean;
+		hasExistingLog?: boolean;
 		busy?: boolean;
 		onundo?: () => void;
 		onfail?: () => void;
@@ -67,7 +69,7 @@
 		type="button"
 		class="{mainButtonClass} size-14 border-green/40 bg-green/10 text-green"
 		disabled={busy || !canCheck}
-		aria-label="Log"
+		aria-label={hasExistingLog ? 'Update log' : 'Log'}
 		onclick={() => oncheck?.()}
 	>
 		<Icon path={mdiNotebookEditOutline} size={26} />

@@ -23,7 +23,13 @@
 			aria-pressed={value != null && star <= value}
 			{disabled}
 			onclick={() => {
-				value = star;
+				if (star === 1 && value === 1) {
+					value = 0;
+				} else if (star === 1 && value === 0) {
+					value = 1;
+				} else {
+					value = star;
+				}
 				onselect?.();
 			}}
 		>

@@ -1,34 +1,43 @@
-import cleaning from '$lib/assets/illustrations/cleaning.svg';
-import education from '$lib/assets/illustrations/education.svg';
-import exercise from '$lib/assets/illustrations/exercise.svg';
-import hygiene from '$lib/assets/illustrations/hygiene.svg';
-import nutrition from '$lib/assets/illustrations/nutrition.svg';
-import morning from '$lib/assets/illustrations/morning.svg';
-import night from '$lib/assets/illustrations/night.svg';
-import noon from '$lib/assets/illustrations/noon.svg';
-import relationship from '$lib/assets/illustrations/relationship.svg';
-import selfCare from '$lib/assets/illustrations/self-care.svg';
-import work from '$lib/assets/illustrations/work.svg';
+import CleaningIllustration from '$lib/components/illustrations/CleaningIllustration.svelte';
+import EducationIllustration from '$lib/components/illustrations/EducationIllustration.svelte';
+import ExerciseIllustration from '$lib/components/illustrations/ExerciseIllustration.svelte';
+import HygieneIllustration from '$lib/components/illustrations/HygieneIllustration.svelte';
+import MorningIllustration from '$lib/components/illustrations/MorningIllustration.svelte';
+import NightIllustration from '$lib/components/illustrations/NightIllustration.svelte';
+import NoDataIllustration from '$lib/components/illustrations/NoDataIllustration.svelte';
+import NoonIllustration from '$lib/components/illustrations/NoonIllustration.svelte';
+import NutritionIllustration from '$lib/components/illustrations/NutritionIllustration.svelte';
+import RelationshipIllustration from '$lib/components/illustrations/RelationshipIllustration.svelte';
+import SelfCareIllustration from '$lib/components/illustrations/SelfCareIllustration.svelte';
+import WorkIllustration from '$lib/components/illustrations/WorkIllustration.svelte';
 import type { HabitCategory } from '$lib/habits/categories';
 import type { Habit } from '$lib/database.types';
+import type { Component } from 'svelte';
+import type { SVGAttributes } from 'svelte/elements';
 
 export type TimeOfDay = 'morning' | 'noon' | 'night';
 
-const timeOfDayIllustrations: Record<TimeOfDay, string> = {
-	morning,
-	noon,
-	night
+export type IllustrationComponent = Component<
+	{
+		class?: string;
+	} & SVGAttributes<SVGSVGElement>
+>;
+
+const timeOfDayIllustrations: Record<TimeOfDay, IllustrationComponent> = {
+	morning: MorningIllustration,
+	noon: NoonIllustration,
+	night: NightIllustration
 };
 
-const categoryIllustrations: Record<HabitCategory, string> = {
-	cleaning,
-	education,
-	exercise,
-	hygiene,
-	nutrition,
-	relationship,
-	'self-care': selfCare,
-	work
+const categoryIllustrations: Record<HabitCategory, IllustrationComponent> = {
+	cleaning: CleaningIllustration,
+	education: EducationIllustration,
+	exercise: ExerciseIllustration,
+	hygiene: HygieneIllustration,
+	nutrition: NutritionIllustration,
+	relationship: RelationshipIllustration,
+	'self-care': SelfCareIllustration,
+	work: WorkIllustration
 };
 
 export function getTimeOfDayFromHour(hour: number): TimeOfDay {
@@ -47,19 +56,23 @@ export function getTimeOfDayFromAnchorTime(anchorTime: string | null): TimeOfDay
 	return getTimeOfDayFromHour(Number.isFinite(hour) ? hour : 12);
 }
 
-export function getTimeOfDayIllustration(date = new Date()): string {
+export function getTimeOfDayIllustration(date = new Date()): IllustrationComponent {
 	return timeOfDayIllustrations[getTimeOfDay(date)];
 }
 
-export function getIllustrationForAnchorTime(anchorTime: string | null): string {
+export function getIllustrationForAnchorTime(anchorTime: string | null): IllustrationComponent {
 	return timeOfDayIllustrations[getTimeOfDayFromAnchorTime(anchorTime)];
 }
 
-export function getCategoryIllustration(category: HabitCategory): string {
+export function getCategoryIllustration(category: HabitCategory): IllustrationComponent {
 	return categoryIllustrations[category];
 }
 
-export function getHabitIllustration(habit: Pick<Habit, 'category' | 'anchor_time'>): string {
+export function getHabitIllustration(
+	habit: Pick<Habit, 'category' | 'anchor_time'>
+): IllustrationComponent {
 	if (habit.category) return getCategoryIllustration(habit.category);
 	return getIllustrationForAnchorTime(habit.anchor_time);
 }
+
+export { NoDataIllustration };

@@ -543,3 +543,33 @@ export function statusLabel(log: HabitLog | null): string {
 	if (log.status === 'skipped') return 'Skipped';
 	return `${log.adherence_score}%`;
 }
+
+export type LogCardBadgeVariant = 'green' | 'yellow' | 'red';
+
+export type LogCardStatus = {
+	variant: LogCardBadgeVariant;
+	label: string;
+};
+
+export function logCardStatus(habit: Habit, log: HabitLog | null): LogCardStatus | null {
+	if (!log) return null;
+
+	if (log.status === 'skipped') {
+		return { variant: 'yellow', label: 'Skipped' };
+	}
+
+	if (log.status !== 'logged') return null;
+
+	if (habit.type === 'do_binary') {
+		return log.actual_value === 1
+			? { variant: 'green', label: 'Done' }
+			: { variant: 'red', label: 'Not done' };
+	}
+
+	const score = log.adherence_score;
+	const label = score != null ? `${score}%` : 'Logged';
+	const variant: LogCardBadgeVariant =
+		score == null ? 'green' : score < 40 ? 'red' : score < 70 ? 'yellow' : 'green';
+
+	return { variant, label };
+}

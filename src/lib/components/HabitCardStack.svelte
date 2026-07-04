@@ -112,6 +112,7 @@
 
 	const canCheck = $derived(currentHabit ? canCheckHabit(currentHabit, currentForm) : false);
 	const canNailItAction = $derived(currentHabit ? canNailIt(currentHabit) : false);
+	const hasExistingLog = $derived(currentHabit?.log?.status === 'logged');
 	const canUndo = $derived(lastLogged != null);
 	const carouselBusy = $derived(busy || animating);
 
@@ -145,19 +146,19 @@
 		};
 	}
 
-	function handleEmblaSettle() {
+	function handleEmblaSelect() {
 		if (!emblaApi) return;
 
 		const nextIndex = emblaApi.selectedScrollSnap();
-		requestAnimationFrame(() => {
-			if (nextIndex !== currentIndex) {
-				currentIndex = nextIndex;
-				undoRestore = null;
-				onnavigate?.();
-			}
+		if (nextIndex === currentIndex) return;
 
-			requestAnimationFrame(() => promoteEmblaLayer(false));
-		});
+		currentIndex = nextIndex;
+		undoRestore = null;
+		onnavigate?.();
+	}
+
+	function handleEmblaSettle() {
+		promoteEmblaLayer(false);
 	}
 
 	function handleEmblaInit(api: CarouselAPI | undefined) {
@@ -184,10 +185,12 @@
 		const onScroll = () => promoteEmblaLayer(true);
 
 		emblaApi.on('scroll', onScroll);
+		emblaApi.on('select', handleEmblaSelect);
 		emblaApi.on('settle', handleEmblaSettle);
 
 		return () => {
 			emblaApi?.off('scroll', onScroll);
+			emblaApi?.off('select', handleEmblaSelect);
 			emblaApi?.off('settle', handleEmblaSettle);
 			promoteEmblaLayer(false);
 		};
@@ -326,11 +329,21 @@
 			role="status"
 			aria-label="Habit {currentIndex + 1} of {habitCount}"
 		>
-			{#each habits as _, index (index)}
+			{#each habits as habit, index (index)}
+				{@const dotLogged = habit.log?.status === 'logged'}
+				{@const dotSkipped = habit.log?.status === 'skipped'}
 				<span
 					class="rounded-full transition-[width,background-color] duration-200 {index === currentIndex
-						? 'h-1.5 w-4 bg-blue'
-						: 'size-1.5 bg-surface-2'}"
+						? dotLogged
+							? 'h-1.5 w-4 bg-green'
+							: dotSkipped
+								? 'h-1.5 w-4 bg-yellow'
+								: 'h-1.5 w-4 bg-blue'
+						: dotLogged
+							? 'size-1.5 bg-green/70'
+							: dotSkipped
+								? 'size-1.5 bg-yellow/70'
+								: 'size-1.5 bg-surface-2'}"
 					aria-hidden="true"
 				></span>
 			{/each}
@@ -342,6 +355,7 @@
 		canSkip={currentCanSkip}
 		{canCheck}
 		canNailIt={canNailItAction}
+		{hasExistingLog}
 		busy={carouselBusy}
 		onundo={handleUndo}
 		onfail={handleFail}

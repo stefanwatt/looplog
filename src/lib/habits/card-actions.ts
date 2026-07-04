@@ -1,6 +1,6 @@
 import type { Habit } from '$lib/database.types';
 import type { HabitLogPayload } from '$lib/habits/log-actions';
-import { nailedItInput } from '$lib/habits/adherence';
+import { nailedItInput, zeroAdherenceTime } from '$lib/habits/adherence';
 
 export type HabitCardForm = {
 	actualValue: number | null;
@@ -19,7 +19,7 @@ export function blankCardForm(habit: Habit): Omit<HabitCardForm, 'touched'> {
 			return { actualValue: null, actualTime: '', satisfaction: null };
 		case 'avoid':
 		case 'rate':
-			return { actualValue: null, actualTime: '', satisfaction: null };
+			return { actualValue: null, actualTime: '', satisfaction: 3 };
 	}
 }
 
@@ -30,7 +30,7 @@ export function failPayload(habit: Habit): HabitLogPayload {
 		case 'do_target':
 			return { actualValue: 0 };
 		case 'do_on_time':
-			return { actualTime: null };
+			return { actualTime: zeroAdherenceTime(habit) };
 		case 'avoid':
 		case 'rate':
 			return { satisfaction: 1 };
@@ -104,7 +104,7 @@ export function canCheckHabit(habit: Habit, form: HabitCardForm): boolean {
 			return form.touched && Boolean(form.actualTime);
 		case 'avoid':
 		case 'rate':
-			return form.touched && form.satisfaction != null && form.satisfaction >= 0;
+			return form.satisfaction != null && form.satisfaction >= 0;
 	}
 }
 

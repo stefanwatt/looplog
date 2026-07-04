@@ -192,16 +192,13 @@
 					<span class="mt-1 block text-xs text-subtext-1">None</span>
 				</button>
 				{#each HABIT_CATEGORIES as option (option)}
+					{@const Illustration = getCategoryIllustration(option)}
 					<button
 						type="button"
 						class={categoryTileClass(category === option)}
 						onclick={() => (category = option)}
 					>
-						<img
-							src={getCategoryIllustration(option)}
-							alt=""
-							class="mx-auto h-12 w-full object-contain"
-						/>
+						<Illustration class="mx-auto h-12 w-full" />
 						<span class="mt-1 block text-xs text-subtext-1">{HABIT_CATEGORY_LABELS[option]}</span>
 					</button>
 				{/each}

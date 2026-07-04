@@ -1,5 +1,5 @@
 <script lang="ts">
-	import noDataIllustration from '$lib/assets/illustrations/no-data.svg';
+	import { NoDataIllustration } from '$lib/illustrations';
 	import Icon from '$lib/components/Icon.svelte';
 	import { mdiCalendarToday } from '@mdi/js';
 	import type { Snippet } from 'svelte';
@@ -19,11 +19,7 @@
 <div
 	class="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl bg-surface-0/40 px-4 py-8 text-center"
 >
-	<img
-		src={noDataIllustration}
-		alt=""
-		class="mb-4 max-h-56 w-full max-w-sm object-contain"
-	/>
+	<NoDataIllustration class="mb-4 max-h-56 w-full max-w-sm" />
 	<p class="m-0">{message}</p>
 	{#if actions}
 		{@render actions()}

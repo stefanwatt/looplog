@@ -10,7 +10,8 @@
 		parseTimeToMinutes,
 		previewAdherenceIcon
 	} from '$lib/habits/adherence';
-	import { getHabitIllustration } from '$lib/illustrations';
+	import { getHabitIllustration, type IllustrationComponent } from '$lib/illustrations';
+	import { logCardStatus } from '$lib/habits/service';
 	import CardActionStamp from '$lib/components/CardActionStamp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
@@ -53,7 +54,7 @@
 		interactive?: boolean;
 		fillHeight?: boolean;
 		showEdit?: boolean;
-		illustrationSrc?: string;
+		illustrationSrc?: IllustrationComponent;
 		currentStreak?: number | null;
 		actualValue?: number | null;
 		actualTime?: string;
@@ -173,8 +174,26 @@
 	const displaySatisfaction = $derived(active ? satisfaction : previewSatisfaction);
 	const displayTime = $derived(active ? actualTime : previewTime);
 
+	const hasLoggedEntry = $derived(log?.status === 'logged');
+	const logStatus = $derived(logCardStatus(habit, log));
+
+	const statusTextClass = $derived(
+		logStatus?.variant === 'green'
+			? 'text-green'
+			: logStatus?.variant === 'yellow'
+				? 'text-yellow'
+				: logStatus?.variant === 'red'
+					? 'text-red'
+					: ''
+	);
+
 	const previewScore = $derived.by(() => {
-		if (!active || habit.type === 'do_binary') return null;
+		if (habit.type === 'do_binary') return null;
+
+		const hasDefaultSatisfaction =
+			(habit.type === 'avoid' || habit.type === 'rate') && displaySatisfaction != null;
+		const showScore = hasLoggedEntry || (active && (touched || hasDefaultSatisfaction));
+		if (!showScore) return null;
 
 		return calculateAdherence(habit, {
 			actualValue: displayValue,
@@ -183,7 +202,7 @@
 		});
 	});
 
-	const resolvedIllustration = $derived(illustrationSrc ?? getHabitIllustration(habit));
+	const Illustration = $derived(illustrationSrc ?? getHabitIllustration(habit));
 
 	const logStep = $derived(habit.log_step ?? 5);
 
@@ -280,15 +299,21 @@
 			class="relative w-full shrink-0 overflow-hidden {CARD_IMAGE_HEIGHT_CLASS}"
 			aria-hidden="true"
 		>
-			<img
-				src={resolvedIllustration}
-				alt=""
-				class="absolute inset-0 h-full w-full object-contain object-center p-4"
-			/>
+			<Illustration class="absolute inset-0 h-full w-full p-4" />
 		</div>
 	</div>
 
 	<div class="shrink-0 bg-text px-5 pt-3 pb-4 text-base">
+		{#if logStatus && habit.type !== 'do_binary'}
+			<div
+				class="mb-3 flex items-baseline justify-between gap-3 border-b border-base/15 pb-2.5"
+				role="status"
+			>
+				<span class="text-sm font-medium text-base/65">Today's log</span>
+				<span class="text-xl font-bold tabular-nums {statusTextClass}">{logStatus.label}</span>
+			</div>
+		{/if}
+
 		{#snippet adherenceScore()}
 			{#if previewScore != null}
 				<span class="text-[1rem] font-bold leading-none tabular-nums">{previewScore}%</span>
@@ -375,18 +400,30 @@
 				/>
 			{/if}
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
-			<div class="flex items-center justify-between gap-3">
+			<div class="relative flex items-center justify-center">
 				{#if active}
 					<StarRating bind:value={satisfaction} disabled={busy} inverted onselect={markTouched} />
 				{:else}
 					<StarRating value={displaySatisfaction} disabled inverted />
 				{/if}
-				{@render adherenceIndicator()}
+				<div class="absolute top-1/2 right-0 -translate-y-1/2">
+					{@render adherenceIndicator()}
+				</div>
 			</div>
 		{:else if habit.type === 'do_binary'}
 			<div class="flex flex-col items-center gap-1.5 py-2 text-center">
-				<p class="m-0 text-lg font-semibold">Did you do it today?</p>
-				<p class="m-0 text-sm text-base/70">{binaryContextLabel}</p>
+				{#if logStatus?.label === 'Skipped'}
+					<p class="m-0 text-lg font-semibold {statusTextClass}">Skipped today</p>
+					<p class="m-0 text-sm text-base/70">Tap an action below to update</p>
+				{:else if hasLoggedEntry}
+					<p class="m-0 text-lg font-semibold {statusTextClass}">
+						{log?.actual_value === 1 ? 'Done today' : 'Not done today'}
+					</p>
+					<p class="m-0 text-sm text-base/70">Tap an action below to update</p>
+				{:else}
+					<p class="m-0 text-lg font-semibold">Did you do it today?</p>
+					<p class="m-0 text-sm text-base/70">{binaryContextLabel}</p>
+				{/if}
 			</div>
 		{/if}
 	</div>

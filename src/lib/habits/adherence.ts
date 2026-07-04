@@ -102,6 +102,22 @@ export function nailedItInput(habit: Habit, timezone: string) {
 	return defaultInputForHabit(habit, timezone);
 }
 
+/** Latest actual time that still scores 0% for do_on_time fail logs. */
+export function zeroAdherenceTime(habit: Habit): string {
+	const target = habit.target_time?.slice(0, 8) ?? '00:00:00';
+	const falloff = habit.falloff_minutes_per_10_percent;
+	const grace = habit.grace_minutes;
+	const step = habit.log_step ?? 5;
+	// log_step past the 10% boundary, snapped to the habit's step grid.
+	const minutesLate = Math.ceil((grace + 9 * falloff + step) / step) * step;
+	const totalMinutes = parseTimeToMinutes(target) + minutesLate;
+	const minutesInDay = 24 * 60;
+	const normalized = ((totalMinutes % minutesInDay) + minutesInDay) % minutesInDay;
+	const hours = Math.floor(normalized / 60);
+	const minutes = normalized % 60;
+	return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+}
+
 export function inputFromLog(habit: Habit, log: HabitLog, timezone: string) {
 	if (log.status === 'logged') {
 		return {

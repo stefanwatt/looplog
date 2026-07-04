@@ -9,6 +9,7 @@ import {
 	failForm,
 	failPayload
 } from './card-actions';
+import { calculateAdherence } from './adherence';
 
 const binary: Habit = {
 	id: '1',
@@ -37,6 +38,19 @@ const target: Habit = {
 	type: 'do_target',
 	target_value: 8,
 	target_unit: 'glasses'
+};
+
+const onTime: Habit = {
+	...binary,
+	id: '3',
+	type: 'do_on_time',
+	target_time: '06:00:00'
+};
+
+const rate: Habit = {
+	...binary,
+	id: '4',
+	type: 'rate'
 };
 
 describe('card-actions', () => {
@@ -70,9 +84,38 @@ describe('card-actions', () => {
 		});
 	});
 
+	test('failPayload for on-time logs zero-adherence time', () => {
+		const payload = failPayload(onTime);
+		expect(payload.actualTime).toBe('07:05:00');
+		expect(calculateAdherence(onTime, payload)).toBe(0);
+	});
+
+	test('failForm fills zero-adherence time for on-time habits', () => {
+		expect(failForm(onTime)).toEqual({
+			actualValue: null,
+			actualTime: '07:05',
+			satisfaction: null,
+			touched: true
+		});
+	});
+
 	test('checkForm preserves entered target value', () => {
 		const form = { ...blankCardForm(target), touched: true, actualValue: 30 };
 		expect(checkForm(target, form).actualValue).toBe(30);
 		expect(checkPayload(target, checkForm(target, form))).toEqual({ actualValue: 30 });
+	});
+
+	test('blankCardForm for rate defaults to 3 stars', () => {
+		expect(blankCardForm(rate)).toEqual({
+			actualValue: null,
+			actualTime: '',
+			satisfaction: 3
+		});
+	});
+
+	test('canCheckHabit for rate allows logging with default stars without touch', () => {
+		const blank = { ...blankCardForm(rate), touched: false };
+		expect(canCheckHabit(rate, blank)).toBe(true);
+		expect(checkPayload(rate, blank)).toEqual({ satisfaction: 3 });
 	});
 });
