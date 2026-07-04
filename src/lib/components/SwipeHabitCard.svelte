@@ -316,7 +316,9 @@
 
 		{#snippet adherenceScore()}
 			{#if previewScore != null}
-				<span class="text-[1rem] font-bold leading-none tabular-nums">{previewScore}%</span>
+				<span class="inline-block w-[4.5ch] text-right text-[1rem] font-bold leading-none tabular-nums"
+					>{previewScore}%</span
+				>
 			{/if}
 		{/snippet}
 
@@ -393,7 +395,7 @@
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
 			<div
 				class="grid w-full items-center {previewScore != null
-					? 'grid-cols-[1fr_auto_1fr]'
+					? 'grid-cols-[1fr_auto_4.5ch]'
 					: 'grid-cols-1 justify-items-center'}"
 			>
 				{#if previewScore != null}
