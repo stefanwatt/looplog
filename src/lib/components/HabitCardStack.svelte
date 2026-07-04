@@ -356,6 +356,7 @@
 		{canCheck}
 		canNailIt={canNailItAction}
 		{hasExistingLog}
+		binaryMode={currentHabit?.type === 'do_binary'}
 		busy={carouselBusy}
 		onundo={handleUndo}
 		onfail={handleFail}

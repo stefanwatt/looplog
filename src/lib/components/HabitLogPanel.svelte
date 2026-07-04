@@ -83,6 +83,7 @@
 		{canCheck}
 		canNailIt={canNailItAction}
 		{hasExistingLog}
+		binaryMode={habit.type === 'do_binary'}
 		{busy}
 		onfail={handleFail}
 		onnailedit={handleNailedIt}

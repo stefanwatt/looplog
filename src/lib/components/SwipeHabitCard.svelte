@@ -21,7 +21,7 @@
 		quickTargetOptions,
 		quickTimeOptions
 	} from '$lib/habits/log-input';
-	import { CARD_ACTION_STAMPS, type CardActionStampType } from '$lib/habits/card-action-animation';
+	import { cardActionStampLabel, CARD_ACTION_STAMPS, type CardActionStampType } from '$lib/habits/card-action-animation';
 	import { mdiPencil } from '@mdi/js';
 
 	const CARD_IMAGE_HEIGHT_CLASS = 'h-36 sm:h-40';
@@ -265,7 +265,7 @@
 >
 	{#if active && stamp}
 		<CardActionStamp
-			label={CARD_ACTION_STAMPS[stamp].label}
+			label={cardActionStampLabel(stamp, habit.type === 'do_binary')}
 			variant={CARD_ACTION_STAMPS[stamp].variant}
 		/>
 	{/if}

@@ -31,6 +31,14 @@ export const CARD_ACTION_STAMPS: Record<CardActionStampType, CardActionStampConf
 	failure: { label: 'Failure', variant: 'red', exitDirection: 'left' }
 };
 
+export function cardActionStampLabel(
+	stamp: CardActionStampType,
+	binaryHabit = false
+): string {
+	if (stamp === 'success' && binaryHabit) return 'Success';
+	return CARD_ACTION_STAMPS[stamp].label;
+}
+
 export function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }

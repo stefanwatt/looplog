@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import { mdiClose, mdiNotebookEditOutline, mdiSkipNext, mdiTrophy, mdiUndo } from '@mdi/js';
+	import { mdiCheck, mdiClose, mdiNotebookEditOutline, mdiSkipNext, mdiTrophy, mdiUndo } from '@mdi/js';
 
 	let {
 		canUndo = false,
@@ -8,6 +8,7 @@
 		canCheck = false,
 		canNailIt = false,
 		hasExistingLog = false,
+		binaryMode = false,
 		busy = false,
 		onundo,
 		onfail,
@@ -20,6 +21,7 @@
 		canCheck?: boolean;
 		canNailIt?: boolean;
 		hasExistingLog?: boolean;
+		binaryMode?: boolean;
 		busy?: boolean;
 		onundo?: () => void;
 		onfail?: () => void;
@@ -69,10 +71,10 @@
 		type="button"
 		class="{mainButtonClass} size-14 border-green/40 bg-green/10 text-green"
 		disabled={busy || !canCheck}
-		aria-label={hasExistingLog ? 'Update log' : 'Log'}
+		aria-label={binaryMode ? 'Did it' : hasExistingLog ? 'Update log' : 'Log'}
 		onclick={() => oncheck?.()}
 	>
-		<Icon path={mdiNotebookEditOutline} size={26} />
+		<Icon path={binaryMode ? mdiCheck : mdiNotebookEditOutline} size={binaryMode ? 28 : 26} />
 	</button>
 
 	<button
