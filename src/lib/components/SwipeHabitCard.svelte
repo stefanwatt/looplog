@@ -326,15 +326,6 @@
 			{/if}
 		{/snippet}
 
-		{#snippet adherenceIndicator()}
-			{#if previewScore != null}
-				<div class="flex shrink-0 items-center gap-0.5 text-[1rem] leading-none">
-					<span class="font-bold tabular-nums">{previewScore}%</span>
-					<Icon path={previewAdherenceIcon(previewScore)} size={22} class="text-base/70" />
-				</div>
-			{/if}
-		{/snippet}
-
 		{#if habit.type === 'do_target'}
 			{#if active}
 				<StepLogInput
@@ -400,15 +391,26 @@
 				/>
 			{/if}
 		{:else if habit.type === 'avoid' || habit.type === 'rate'}
-			<div class="relative flex items-center justify-center">
+			<div
+				class="grid w-full items-center {previewScore != null
+					? 'grid-cols-[1fr_auto_1fr]'
+					: 'grid-cols-1 justify-items-center'}"
+			>
+				{#if previewScore != null}
+					<div class="flex justify-end pr-1">
+						{@render adherenceEmoji()}
+					</div>
+				{/if}
 				{#if active}
 					<StarRating bind:value={satisfaction} disabled={busy} inverted onselect={markTouched} />
 				{:else}
 					<StarRating value={displaySatisfaction} disabled inverted />
 				{/if}
-				<div class="absolute top-1/2 right-0 -translate-y-1/2">
-					{@render adherenceIndicator()}
-				</div>
+				{#if previewScore != null}
+					<div class="flex justify-end">
+						{@render adherenceScore()}
+					</div>
+				{/if}
 			</div>
 		{:else if habit.type === 'do_binary'}
 			<div class="flex flex-col items-center gap-1.5 py-2 text-center">
