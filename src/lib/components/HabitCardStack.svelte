@@ -292,7 +292,7 @@
 				{#each habits as habit, index (habit.id)}
 					{@const isCurrent = index === currentIndex}
 					{@const isRendered = renderedIndices.has(index)}
-					<Carousel.Item class="h-full ps-0">
+					<Carousel.Item class="h-full ps-0 me-3">
 						<div class="h-full min-h-0">
 							{#if !isRendered}
 								<HabitCardPlaceholder />
