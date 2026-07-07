@@ -8,8 +8,8 @@ class StatsStore {
 	error = $state<string | null>(null);
 	snapshot = $state<StatsSnapshot | null>(null);
 
-	async load(userId: string) {
-		if (this.loading) return;
+	async load(userId: string, options: { force?: boolean } = {}) {
+		if (this.loading && !options.force) return;
 		this.loading = true;
 		this.error = null;
 

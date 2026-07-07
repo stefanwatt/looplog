@@ -53,6 +53,11 @@ sw.addEventListener('fetch', (event) => {
 			return fetch(event.request);
 		}
 
+		const acceptsJson = event.request.headers.get('accept')?.includes('application/json');
+		if (event.request.mode === 'navigate' || acceptsJson) {
+			return fetch(event.request);
+		}
+
 		try {
 			const response = await fetch(event.request);
 

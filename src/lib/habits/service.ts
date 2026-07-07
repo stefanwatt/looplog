@@ -380,10 +380,11 @@ export function buildFocusCarousel(
 	anytimeHabits: HabitWithLog[],
 	options: {
 		filter?: FocusHabitFilter;
+		unloggedOnly?: boolean;
 		focusHabitId?: string | null;
 	} = {}
 ): FocusCarouselResult {
-	const { filter = 'all', focusHabitId } = options;
+	const { filter = 'all', unloggedOnly = false, focusHabitId } = options;
 
 	let habits: HabitWithLog[];
 	if (filter === 'timed') {
@@ -395,6 +396,10 @@ export function buildFocusCarousel(
 			...orderedTimedHabitsForCarousel(timedHabits),
 			...orderedAnytimeHabitsForCarousel(anytimeHabits)
 		];
+	}
+
+	if (unloggedOnly) {
+		habits = habits.filter((habit) => !habit.log);
 	}
 
 	let initialIndex = 0;

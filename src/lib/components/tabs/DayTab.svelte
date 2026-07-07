@@ -85,7 +85,7 @@
 		</div>
 
 		<div class="mt-4">
-			<HabitFilterToggle value={filter} {pendingCounts} onchange={setFilter} />
+			<HabitFilterToggle value={filter} {pendingCounts} onchange={(nextFilter) => setFilter(nextFilter as HabitFilter)} />
 		</div>
 	</header>
 

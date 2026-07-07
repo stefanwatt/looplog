@@ -11,6 +11,11 @@ export function parseHabitFilter(value: string | null): HabitFilter {
 	return 'all';
 }
 
+export function parseUnloggedOnly(unlogged: string | null, filter: string | null): boolean {
+	if (unlogged === '1' || unlogged === 'true') return true;
+	return filter === 'pending';
+}
+
 export function tabHref(
 	base: '/focus' | '/day',
 	options: {
@@ -18,6 +23,7 @@ export function tabHref(
 		filter?: HabitFilter;
 		habitId?: string;
 		catchUp?: boolean;
+		unloggedOnly?: boolean;
 		todayDateKey?: string;
 	} = {}
 ) {
@@ -25,6 +31,7 @@ export function tabHref(
 
 	if (options.habitId) params.set('habitId', options.habitId);
 	if (options.catchUp) params.set('catchUp', '1');
+	if (options.unloggedOnly) params.set('unlogged', '1');
 
 	if (options.date) {
 		const omitDefaultDate =

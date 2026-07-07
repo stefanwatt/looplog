@@ -145,6 +145,31 @@ describe('computeStatsSnapshot', () => {
 		expect(snapshot.adherence['7d']).toBeNull();
 	});
 
+	test('excludes archived habits from rankings and aggregates', () => {
+		const habits = [
+			habit({ id: 'active', name: 'Active' }),
+			habit({
+				id: 'archived',
+				name: 'Deleted',
+				archived_at: '2025-06-10T12:00:00.000Z'
+			})
+		];
+		const logs = [
+			log({ habit_id: 'active', log_date: '2025-06-10', adherence_score: 100 }),
+			log({
+				id: 'log-archived',
+				habit_id: 'archived',
+				log_date: '2025-06-09',
+				adherence_score: 0
+			})
+		];
+
+		const snapshot = computeStatsSnapshot(habits, logs, timezone, '2025-06-12');
+
+		expect(snapshot.habitRankings.map((entry) => entry.habit.id)).toEqual(['active']);
+		expect(snapshot.habitRankings.some((entry) => entry.habit.id === 'archived')).toBe(false);
+	});
+
 	test('computes window-limited adherence', () => {
 		const habits = [habit()];
 		const logs = [

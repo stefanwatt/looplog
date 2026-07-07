@@ -41,7 +41,8 @@
 		onnavigate,
 		onlog,
 		onskip,
-		onundo
+		onundo,
+		onallcomplete
 	}: {
 		habits: HabitWithLog[];
 		initialIndex?: number;
@@ -52,6 +53,7 @@
 		onlog: (habit: HabitWithLog, payload: HabitLogPayload) => void;
 		onskip?: (habit: HabitWithLog) => void;
 		onundo?: (habit: HabitWithLog) => void;
+		onallcomplete?: () => void;
 	} = $props();
 
 	let currentIndex = $state(0);
@@ -167,6 +169,18 @@
 		currentIndex = api.selectedScrollSnap();
 	}
 
+	function completesAllHabitsForDay(habit: HabitWithLog): boolean {
+		if (dateKey !== day.todayDateKey) return false;
+
+		const timed = day.timedHabitsFor(dateKey);
+		const anytime = day.anytimeHabitsFor(dateKey);
+		const all = [...timed, ...anytime];
+		if (all.length === 0) return false;
+
+		const pending = all.filter((entry) => !entry.log);
+		return pending.length === 1 && pending[0]?.id === habit.id;
+	}
+
 	function promoteEmblaLayer(active: boolean) {
 		const container = emblaApi?.containerNode();
 		if (!container) return;
@@ -249,7 +263,9 @@
 
 		lastLogged = entry;
 		undoRestore = null;
+		const completesDay = completesAllHabitsForDay(currentHabit);
 		complete(currentHabit);
+		if (completesDay) onallcomplete?.();
 
 		stamp = null;
 		formPreview = null;
@@ -258,12 +274,14 @@
 
 	function handleSkip() {
 		if (!currentHabit || carouselBusy || !currentCanSkip || !onskip) return;
+		const completesDay = completesAllHabitsForDay(currentHabit);
 		lastLogged = {
 			habit: currentHabit,
 			form: snapshotForm()
 		};
 		undoRestore = null;
 		onskip(currentHabit);
+		if (completesDay) onallcomplete?.();
 	}
 
 	function handleUndo() {

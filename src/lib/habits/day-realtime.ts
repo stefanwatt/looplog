@@ -5,6 +5,12 @@ import { createClient } from '$lib/supabase/client';
 
 let channel: RealtimeChannel | null = null;
 
+function clearChannelIfClosed(status: string) {
+	if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+		channel = null;
+	}
+}
+
 export function startDayRealtime(userId: string) {
 	if (channel) return;
 
@@ -53,7 +59,14 @@ export function startDayRealtime(userId: string) {
 				store.applyHabit(payload.new as Habit);
 			}
 		)
-		.subscribe();
+		.subscribe((status) => {
+			clearChannelIfClosed(status);
+		});
+}
+
+export function restartDayRealtime(userId: string) {
+	stopDayRealtime();
+	startDayRealtime(userId);
 }
 
 export function stopDayRealtime() {

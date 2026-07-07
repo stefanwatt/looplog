@@ -1,6 +1,6 @@
 import { canSkipToday } from '$lib/habits/adherence';
 import type { Habit, HabitLog, HabitWithLog } from '$lib/database.types';
-import { dayViewsFromData, type LoadedDayData } from '$lib/habits/load-day';
+import { dayViewsFromData, loadDayData, type LoadedDayData } from '$lib/habits/load-day';
 import {
 	buildFocusCarousel,
 	listLogsForDates,
@@ -8,7 +8,7 @@ import {
 	recentLogsMapFromRecord
 } from '$lib/habits/service';
 import type { HabitFilter } from '$lib/habits/filter';
-import { dateKeyInTimezone, parseDateKey, shiftDateKey } from '$lib/habits/schedule';
+import { parseDateKey, shiftDateKey } from '$lib/habits/schedule';
 import { createClient } from '$lib/supabase/client';
 
 export type AnytimeHabit = HabitWithLog & { canSkip: boolean };
@@ -94,6 +94,7 @@ class DayStore {
 		dateKey?: string;
 		focusHabitId?: string | null;
 		filter?: HabitFilter;
+		unloggedOnly?: boolean;
 	}) {
 		const dateKey = options.dateKey ?? this.todayDateKey;
 		if (!this.ready || !dateKey) {
@@ -112,23 +113,20 @@ class DayStore {
 		const anytime = this.anytimeHabitsFor(dateKey);
 		const { habits, initialIndex } = buildFocusCarousel(timed, anytime, {
 			filter,
+			unloggedOnly: options.unloggedOnly,
 			focusHabitId: options.focusHabitId
 		});
 
 		const timedDone = timed.filter((habit) => habit.log).length;
 		const anytimeDone = anytime.filter((habit) => habit.log).length;
+		const allDone = timedDone + anytimeDone;
+		const allTotal = timed.length + anytime.length;
 		const doneCount =
-			filter === 'timed'
-				? timedDone
-				: filter === 'anytime'
-					? anytimeDone
-					: timedDone + anytimeDone;
+			filter === 'timed' ? timedDone : filter === 'anytime' ? anytimeDone : allDone;
 		const totalCount =
-			filter === 'timed'
-				? timed.length
-				: filter === 'anytime'
-					? anytime.length
-					: timed.length + anytime.length;
+			filter === 'timed' ? timed.length : filter === 'anytime' ? anytime.length : allTotal;
+		const tabCount = (habits: HabitWithLog[]) =>
+			options.unloggedOnly ? pendingHabitCount(habits) : habits.length;
 		const currentHabit = habits[initialIndex] ?? habits[0] ?? null;
 		const anytimeById = new Map(anytime.map((habit) => [habit.id, habit]));
 
@@ -138,9 +136,9 @@ class DayStore {
 			doneCount,
 			totalCount,
 			pendingCounts: {
-				all: pendingHabitCount([...timed, ...anytime]),
-				timed: pendingHabitCount(timed),
-				anytime: pendingHabitCount(anytime)
+				all: tabCount([...timed, ...anytime]),
+				timed: tabCount(timed),
+				anytime: tabCount(anytime)
 			},
 			canSkip: currentHabit
 				? currentHabit.anchor_time != null
@@ -224,19 +222,21 @@ class DayStore {
 		this.loadedDateKeys = new Set([...this.loadedDateKeys, dateKey]);
 	}
 
-	async refreshToday() {
+	async refreshOnResume() {
 		if (!this.userId) return;
 
 		const client = createClient();
-		const dateKey = dateKeyInTimezone(new Date(), this.timezone);
-		const logs = await listLogsForDates(client, this.userId, [dateKey]);
+		const data = await loadDayData(client, this.userId);
 
-		this.todayDateKey = dateKey;
+		this.timezone = data.timezone;
+		this.todayDateKey = data.dateKey;
+		this.habits = data.habits;
 		this.logs = [
-			...this.logs.filter((log) => log.log_date !== dateKey),
-			...logs
+			...this.logs.filter((log) => log.log_date !== data.dateKey),
+			...data.logs
 		];
-		this.loadedDateKeys = new Set([...this.loadedDateKeys, dateKey]);
+		this.recentLogsByHabit = recentLogsMapFromRecord(data.recentLogs);
+		this.loadedDateKeys = new Set([...this.loadedDateKeys, data.dateKey]);
 	}
 
 	viewDateKeys() {

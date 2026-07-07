@@ -13,13 +13,15 @@
 		initialIndex = 0,
 		timezone,
 		dateKey,
-		onnavigate
+		onnavigate,
+		onallcomplete
 	}: {
 		habits: HabitWithLog[];
 		initialIndex?: number;
 		timezone: string;
 		dateKey: string;
 		onnavigate?: () => void;
+		onallcomplete?: () => void;
 	} = $props();
 
 	let error = $state('');
@@ -57,6 +59,7 @@
 			onlog={handleLog}
 			onskip={handleSkip}
 			onundo={handleUndo}
+			{onallcomplete}
 		/>
 	</div>
 {/if}

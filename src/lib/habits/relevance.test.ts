@@ -291,6 +291,60 @@ describe('buildFocusCarousel', () => {
 
 		expect(carousel.habits.map((h) => h.id)).toEqual(['water', 'stretch']);
 	});
+
+	test('returns only unlogged habits when unloggedOnly is true', () => {
+		const afternoonLog: HabitLog = {
+			id: 'log-1',
+			habit_id: 'afternoon',
+			user_id: 'user',
+			log_date: '2025-06-27',
+			status: 'logged',
+			actual_value: 1,
+			actual_time: null,
+			satisfaction: null,
+			adherence_score: 100,
+			created_at: '',
+			updated_at: ''
+		};
+
+		const timed = [
+			habit('morning', 'Brush Teeth (Morning)', '08:00'),
+			{ ...habit('afternoon', 'Walk', '12:00'), log: afternoonLog },
+			habit('evening', 'Brush Teeth (Evening)', '17:00')
+		];
+		const anytime = [anytimeHabit('water', 'Drink Water')];
+
+		const carousel = buildFocusCarousel(timed, anytime, { filter: 'all', unloggedOnly: true });
+
+		expect(carousel.habits.map((h) => h.id)).toEqual(['morning', 'evening', 'water']);
+	});
+
+	test('returns only unlogged timed habits when filter is timed and unloggedOnly is true', () => {
+		const afternoonLog: HabitLog = {
+			id: 'log-1',
+			habit_id: 'afternoon',
+			user_id: 'user',
+			log_date: '2025-06-27',
+			status: 'logged',
+			actual_value: 1,
+			actual_time: null,
+			satisfaction: null,
+			adherence_score: 100,
+			created_at: '',
+			updated_at: ''
+		};
+
+		const timed = [
+			habit('morning', 'Brush Teeth (Morning)', '08:00'),
+			{ ...habit('afternoon', 'Walk', '12:00'), log: afternoonLog },
+			habit('evening', 'Brush Teeth (Evening)', '17:00')
+		];
+		const anytime = [anytimeHabit('water', 'Drink Water')];
+
+		const carousel = buildFocusCarousel(timed, anytime, { filter: 'timed', unloggedOnly: true });
+
+		expect(carousel.habits.map((h) => h.id)).toEqual(['morning', 'evening']);
+	});
 });
 
 describe('buildFocusStack', () => {

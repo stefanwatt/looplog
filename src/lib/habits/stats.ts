@@ -325,12 +325,17 @@ export function computeHabitStats(
 	};
 }
 
+function activeHabits(habits: Habit[]): Habit[] {
+	return habits.filter((habit) => habit.archived_at === null);
+}
+
 export function computeStatsSnapshot(
 	habits: Habit[],
 	logs: HabitLog[],
 	timezone: string,
 	todayDateKey: string
 ): StatsSnapshot {
+	const habitsForStats = activeHabits(habits);
 	const trackingStart = trackingStartDate(logs);
 	const emptyWindows = { '7d': null, '30d': null, all: null } as Record<StatsWindow, number | null>;
 
@@ -356,7 +361,7 @@ export function computeStatsSnapshot(
 		const start = windowStartDate(todayDateKey, window, trackingStart);
 		const keys = dateKeysInclusive(start, todayDateKey);
 		const points = keys.map((dateKey) =>
-			computeDailyStats(habits, logs, dateKey, timezone, trackingStart)
+			computeDailyStats(habitsForStats, logs, dateKey, timezone, trackingStart)
 		);
 		dailySeries[window] = points;
 		adherence[window] = aggregateMetric(points, 'adherence');
@@ -367,7 +372,7 @@ export function computeStatsSnapshot(
 	const streaks = computeStreaks(streakSource);
 
 	const rankingWindowStart = windowStartDate(todayDateKey, '30d', trackingStart);
-	const habitRankings = habits
+	const habitRankings = habitsForStats
 		.map((habit) =>
 			computeHabitStats(
 				habit,

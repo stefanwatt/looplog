@@ -9,6 +9,7 @@
 	import FocusTab from '$lib/components/tabs/FocusTab.svelte';
 	import StatsTab from '$lib/components/tabs/StatsTab.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { startAppResumeSync } from '$lib/habits/app-resume';
 	import { startDayRealtime, stopDayRealtime } from '$lib/habits/day-realtime';
 	import { getDayStore } from '$lib/habits/day.svelte';
 	import { getStatsStore } from '$lib/habits/stats.svelte';
@@ -33,6 +34,8 @@
 	if (data.user && data.day) {
 		if (!day.ready) {
 			day.init(data.user.id, data.day);
+		} else if (data.day.dateKey !== day.todayDateKey) {
+			void day.refreshOnResume();
 		}
 	} else if (day.ready) {
 		day.reset();
@@ -54,6 +57,17 @@
 		}
 
 		startDayRealtime(data.user.id);
+	});
+
+	$effect(() => {
+		if (!browser || !data.user) return;
+
+		const userId = data.user.id;
+
+		return startAppResumeSync(() => ({
+			userId,
+			reloadStats: page.url.pathname.startsWith('/stats')
+		}));
 	});
 
 	onNavigate((navigation) => {
