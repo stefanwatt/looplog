@@ -8,6 +8,7 @@ import {
 import { createClient } from '$lib/supabase/client';
 
 let channel: RealtimeChannel | null = null;
+let startGeneration = 0;
 
 function clearChannelIfClosed(status: string) {
 	if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -15,9 +16,10 @@ function clearChannelIfClosed(status: string) {
 	}
 }
 
-export function startDayRealtime(userId: string) {
+export async function startDayRealtime(userId: string) {
 	if (channel) return;
 
+	const generation = ++startGeneration;
 	const supabase = createClient();
 	const store = getDayStore();
 	const realtimeStatus = getRealtimeStatusStore();
@@ -25,6 +27,24 @@ export function startDayRealtime(userId: string) {
 	const channelName = `day:${userId}`;
 
 	realtimeStatus.setSubscription(userId, channelName);
+	realtimeStatus.setStatus('connecting', 'AUTHENTICATING');
+
+	const {
+		data: { session },
+		error
+	} = await supabase.auth.getSession();
+
+	if (generation !== startGeneration) return;
+
+	if (error || !session?.access_token) {
+		realtimeStatus.setStatus('error', 'AUTH_ERROR');
+		return;
+	}
+
+	await supabase.realtime.setAuth(session.access_token);
+
+	if (generation !== startGeneration || channel) return;
+
 	realtimeStatus.setStatus('connecting', 'SUBSCRIBING');
 	supabase.realtime.onHeartbeat((status, latency) => {
 		realtimeStatus.recordHeartbeat(status, latency);
@@ -84,11 +104,12 @@ export function startDayRealtime(userId: string) {
 
 export function restartDayRealtime(userId: string) {
 	stopDayRealtime();
-	startDayRealtime(userId);
+	void startDayRealtime(userId);
 }
 
 export function stopDayRealtime() {
 	const realtimeStatus = getRealtimeStatusStore();
+	startGeneration += 1;
 
 	if (!channel) {
 		realtimeStatus.reset();

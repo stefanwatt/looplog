@@ -56,7 +56,7 @@
 			return;
 		}
 
-		startDayRealtime(data.user.id);
+		void startDayRealtime(data.user.id);
 	});
 
 	$effect(() => {
