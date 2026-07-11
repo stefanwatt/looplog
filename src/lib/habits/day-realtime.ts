@@ -22,13 +22,16 @@ export function startDayRealtime(userId: string) {
 	const store = getDayStore();
 	const realtimeStatus = getRealtimeStatusStore();
 
+	const channelName = `day:${userId}`;
+
+	realtimeStatus.setSubscription(userId, channelName);
 	realtimeStatus.setStatus('connecting', 'SUBSCRIBING');
 	supabase.realtime.onHeartbeat((status, latency) => {
 		realtimeStatus.recordHeartbeat(status, latency);
 	});
 
 	channel = supabase
-		.channel(`day:${userId}`)
+		.channel(channelName)
 		.on(
 			'postgres_changes',
 			{

@@ -9,8 +9,29 @@ export type RealtimeConnectionStatus =
 export type RealtimeDiagnosticEvent = {
 	id: number;
 	at: Date;
-	kind: 'lifecycle' | 'heartbeat' | 'postgres';
+	kind: 'lifecycle' | 'heartbeat' | 'postgres' | 'auth';
 	message: string;
+};
+
+export type JwtClaimsSummary = {
+	sub: string | null;
+	role: string | null;
+	expiresAt: Date | null;
+};
+
+export type RealtimeAuthDiagnostics = {
+	checkedAt: Date;
+	layoutUserId: string | null;
+	sessionUserId: string | null;
+	validatedUserId: string | null;
+	subscriptionUserId: string | null;
+	channelName: string | null;
+	hasSession: boolean;
+	hasAccessToken: boolean;
+	sessionClaims: JwtClaimsSummary | null;
+	realtimeClaims: JwtClaimsSummary | null;
+	sessionError: string | null;
+	validationError: string | null;
 };
 
 class RealtimeStatusStore {
@@ -22,6 +43,9 @@ class RealtimeStatusStore {
 	lastPayloadSummary = $state<string | null>(null);
 	heartbeatStatus = $state<string | null>(null);
 	lastHeartbeatAt = $state<Date | null>(null);
+	subscriptionUserId = $state<string | null>(null);
+	channelName = $state<string | null>(null);
+	auth = $state<RealtimeAuthDiagnostics | null>(null);
 	events = $state.raw<RealtimeDiagnosticEvent[]>([]);
 	private nextEventId = 1;
 
@@ -66,6 +90,24 @@ class RealtimeStatusStore {
 		this.addEvent('heartbeat', `Heartbeat: ${status}${latencyText}`);
 	}
 
+	setSubscription(userId: string, channelName: string) {
+		this.subscriptionUserId = userId;
+		this.channelName = channelName;
+		this.addEvent('lifecycle', `Subscribing channel ${channelName}`);
+	}
+
+	setAuthDiagnostics(diagnostics: RealtimeAuthDiagnostics) {
+		this.auth = diagnostics;
+		const parts = [
+			`session=${diagnostics.sessionUserId ?? 'none'}`,
+			`validated=${diagnostics.validatedUserId ?? 'none'}`,
+			`subscription=${diagnostics.subscriptionUserId ?? 'none'}`,
+			`sessionRole=${diagnostics.sessionClaims?.role ?? 'n/a'}`,
+			`realtimeRole=${diagnostics.realtimeClaims?.role ?? 'n/a'}`
+		];
+		this.addEvent('auth', parts.join(' · '));
+	}
+
 	reset() {
 		this.status = 'idle';
 		this.lastChangedAt = null;
@@ -75,6 +117,9 @@ class RealtimeStatusStore {
 		this.lastPayloadSummary = null;
 		this.heartbeatStatus = null;
 		this.lastHeartbeatAt = null;
+		this.subscriptionUserId = null;
+		this.channelName = null;
+		this.auth = null;
 		this.events = [];
 		this.nextEventId = 1;
 	}
