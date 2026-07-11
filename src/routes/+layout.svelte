@@ -8,14 +8,13 @@
 	import DayTab from '$lib/components/tabs/DayTab.svelte';
 	import FocusTab from '$lib/components/tabs/FocusTab.svelte';
 	import StatsTab from '$lib/components/tabs/StatsTab.svelte';
-	import RealtimeStatus from '$lib/components/RealtimeStatus.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { startAppResumeSync } from '$lib/habits/app-resume';
 	import { startDayRealtime, stopDayRealtime } from '$lib/habits/day-realtime';
 	import { getDayStore } from '$lib/habits/day.svelte';
 	import { getStatsStore } from '$lib/habits/stats.svelte';
 	import { onNavigate } from '$app/navigation';
-	import { mdiCalendarToday, mdiChartLine, mdiPlayCircle } from '@mdi/js';
+	import { mdiBug, mdiCalendarToday, mdiChartLine, mdiPlayCircle } from '@mdi/js';
 
 	const tabs = [
 		{ href: '/focus', label: 'Focus', icon: mdiPlayCircle },
@@ -86,7 +85,7 @@
 		});
 	});
 
-	function navigateTab(href: (typeof tabs)[number]['href'], event: MouseEvent) {
+	function navigateTab(href: string, event: MouseEvent) {
 		if (
 			event.metaKey ||
 			event.ctrlKey ||
@@ -106,9 +105,6 @@
 </script>
 
 <div class="flex h-dvh flex-col overflow-hidden bg-base font-sans text-text">
-	{#if showNav}
-		<RealtimeStatus />
-	{/if}
 	<main
 		class="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-[5.5rem]"
 	>
@@ -145,7 +141,7 @@
 			class="fixed right-0 bottom-0 left-0 flex items-center gap-2 border-t border-surface-0/50 bg-mantle/95 px-3 pt-1.5 pb-[calc(0.35rem+env(safe-area-inset-bottom))] backdrop-blur-md"
 			aria-label="Main"
 		>
-			<div class="grid min-w-0 flex-1 grid-cols-3">
+			<div class="grid min-w-0 flex-1 grid-cols-4">
 				{#each tabs as tab (tab.href)}
 					<a
 						href={tab.href}
@@ -161,6 +157,21 @@
 						{tab.label}
 					</a>
 				{/each}
+				{#if data.user}
+					<a
+						href="/debug/realtime"
+						onclick={(event) => navigateTab('/debug/realtime', event)}
+						class="flex flex-col items-center justify-center gap-0.5 px-2 py-3 text-sm font-semibold no-underline {page.url.pathname.startsWith(
+							'/debug/realtime'
+						)
+							? 'text-blue'
+							: 'text-subtext-0'}"
+						aria-current={page.url.pathname.startsWith('/debug/realtime') ? 'page' : undefined}
+					>
+						<Icon path={mdiBug} size={20} />
+						Debug
+					</a>
+				{/if}
 			</div>
 			<CreateHabitButton />
 		</nav>

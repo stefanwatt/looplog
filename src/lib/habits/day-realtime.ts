@@ -23,6 +23,9 @@ export function startDayRealtime(userId: string) {
 	const realtimeStatus = getRealtimeStatusStore();
 
 	realtimeStatus.setStatus('connecting', 'SUBSCRIBING');
+	supabase.realtime.onHeartbeat((status, latency) => {
+		realtimeStatus.recordHeartbeat(status, latency);
+	});
 
 	channel = supabase
 		.channel(`day:${userId}`)
@@ -35,6 +38,8 @@ export function startDayRealtime(userId: string) {
 				filter: `user_id=eq.${userId}`
 			},
 			(payload) => {
+				realtimeStatus.recordPayload('habit_logs', payload.eventType);
+
 				if (payload.eventType === 'DELETE') {
 					const old = payload.old as { habit_id?: string; log_date?: string };
 					if (old.habit_id && old.log_date) {
@@ -55,6 +60,8 @@ export function startDayRealtime(userId: string) {
 				filter: `user_id=eq.${userId}`
 			},
 			(payload) => {
+				realtimeStatus.recordPayload('habits', payload.eventType);
+
 				if (payload.eventType === 'DELETE') {
 					const old = payload.old as { id?: string };
 					if (old.id) {
