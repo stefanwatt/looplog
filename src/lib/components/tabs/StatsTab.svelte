@@ -140,7 +140,10 @@
 					</h3>
 					<div class="grid gap-2">
 						{#each bestHabits as entry (entry.habit.id)}
-							<article class="flex items-center justify-between rounded-2xl bg-surface-0/40 px-4 py-3">
+							<a
+								href="/habits/{entry.habit.id}/history"
+								class="flex items-center justify-between rounded-2xl bg-surface-0/40 px-4 py-3 no-underline text-inherit transition active:bg-surface-0/60"
+							>
 								<div class="min-w-0">
 									<p class="m-0 truncate font-semibold">{entry.habit.name}</p>
 									<p class="mt-0.5 mb-0 text-xs text-subtext-0">
@@ -150,7 +153,7 @@
 								<span class="text-lg font-bold tabular-nums text-green"
 									>{entry.adherence ?? '—'}%</span
 								>
-							</article>
+							</a>
 						{/each}
 					</div>
 				{/if}
@@ -167,7 +170,10 @@
 					</h3>
 					<div class="grid gap-2">
 						{#each strugglingHabits as entry (entry.habit.id)}
-							<article class="rounded-2xl border border-peach/20 bg-surface-0/40 px-4 py-3">
+							<a
+								href="/habits/{entry.habit.id}/history"
+								class="block rounded-2xl border border-peach/20 bg-surface-0/40 px-4 py-3 no-underline text-inherit transition active:bg-surface-0/60"
+							>
 								<div class="flex items-center justify-between gap-3">
 									<div class="min-w-0">
 										<p class="m-0 truncate font-semibold">{entry.habit.name}</p>
@@ -179,11 +185,8 @@
 										>{entry.adherence ?? '—'}%</span
 									>
 								</div>
-								<p class="mt-2 mb-0 text-xs text-subtext-0">
-									Environment and cue notes coming soon — think Atomic Habits: what makes this
-									harder?
-								</p>
-							</article>
+								<p class="mt-2 mb-0 text-xs text-subtext-0">Tap to view log history</p>
+							</a>
 						{/each}
 					</div>
 				{/if}

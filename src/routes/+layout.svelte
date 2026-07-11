@@ -8,6 +8,7 @@
 	import DayTab from '$lib/components/tabs/DayTab.svelte';
 	import FocusTab from '$lib/components/tabs/FocusTab.svelte';
 	import StatsTab from '$lib/components/tabs/StatsTab.svelte';
+	import RealtimeStatus from '$lib/components/RealtimeStatus.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { startAppResumeSync } from '$lib/habits/app-resume';
 	import { startDayRealtime, stopDayRealtime } from '$lib/habits/day-realtime';
@@ -105,6 +106,9 @@
 </script>
 
 <div class="flex h-dvh flex-col overflow-hidden bg-base font-sans text-text">
+	{#if showNav}
+		<RealtimeStatus />
+	{/if}
 	<main
 		class="mx-auto flex w-full max-w-lg min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-[5.5rem]"
 	>

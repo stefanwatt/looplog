@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import StatsInsightPanel from '$lib/components/StatsInsightPanel.svelte';
 	import StatsTrendChart from '$lib/components/StatsTrendChart.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getStatsStore } from '$lib/habits/stats.svelte';
@@ -28,16 +29,25 @@
 		snapshot && metric && window ? metricSeries(snapshot, metric, window) : []
 	);
 
+	let selectedDateKey = $state<string | null>(null);
+
+	$effect(() => {
+		page.params.metric;
+		page.params.window;
+		selectedDateKey = null;
+	});
+
 	const title = $derived.by(() => {
 		if (!metric || !window) return 'Stats';
-		if (metric === 'streak-current' || metric === 'streak-best') {
-			return `${metricLabel(metric)} · ${windowLabel(window)}`;
-		}
 		return `${metricLabel(metric)} · ${windowLabel(window)}`;
 	});
 
 	function goBack() {
 		void goto('/stats', { keepFocus: true, noScroll: true });
+	}
+
+	function toggleDate(dateKey: string) {
+		selectedDateKey = selectedDateKey === dateKey ? null : dateKey;
 	}
 </script>
 
@@ -75,17 +85,22 @@
 			<p class="m-0">Not enough data yet.</p>
 		</div>
 	{:else}
-		<StatsTrendChart {metric} points={series} transitionName="stats-metric-primary" />
+		<StatsTrendChart
+			{metric}
+			points={series}
+			{selectedDateKey}
+			transitionName="stats-metric-primary"
+			onselect={toggleDate}
+		/>
 
-		<p class="mt-4 mb-0 text-sm text-subtext-0">
-			{#if metric === 'adherence'}
-				Daily average adherence across scheduled habits. Allowed skips are excluded; missed days
-				count as 0%.
-			{:else if metric === 'completion'}
-				Share of scheduled habit-days that were logged or penalty-free skipped.
-			{:else}
-				Each day is 100% when every scheduled habit was logged or penalty-free skipped.
-			{/if}
-		</p>
+		<StatsInsightPanel
+			{metric}
+			{window}
+			{snapshot}
+			habits={stats.habits}
+			logs={stats.logs}
+			timezone={stats.timezone}
+			{selectedDateKey}
+		/>
 	{/if}
 </section>

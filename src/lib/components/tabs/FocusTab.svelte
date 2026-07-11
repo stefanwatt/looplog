@@ -4,9 +4,10 @@
 	import DayCompleteCelebration from '$lib/components/DayCompleteCelebration.svelte';
 	import FocusStackEmptyState from '$lib/components/FocusStackEmptyState.svelte';
 	import FocusStack from '$lib/components/FocusStack.svelte';
-	import HabitFilterToggle from '$lib/components/HabitFilterToggle.svelte';
+	import SegmentedToggle from '$lib/components/SegmentedToggle.svelte';
 	import { getDayStore } from '$lib/habits/day.svelte';
 	import {
+		habitFilterOptions,
 		parseHabitFilter,
 		parseUnloggedOnly,
 		tabHref,
@@ -138,9 +139,11 @@
 			</div>
 		</div>
 		<div class="mb-3">
-			<HabitFilterToggle
+			<SegmentedToggle
 				value={filter}
-				pendingCounts={carousel.pendingCounts}
+				options={habitFilterOptions}
+				badges={carousel.pendingCounts}
+				ariaLabel="Habit filter"
 				onchange={(nextFilter) => setFilter(nextFilter as HabitFilter)}
 			/>
 		</div>

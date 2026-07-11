@@ -50,6 +50,18 @@ export async function listActiveHabits(client: Client, userId: string) {
 	return data;
 }
 
+export async function listLogsForHabit(client: Client, userId: string, habitId: string) {
+	const { data, error } = await client
+		.from('habit_logs')
+		.select('*')
+		.eq('user_id', userId)
+		.eq('habit_id', habitId)
+		.order('log_date', { ascending: false });
+
+	if (error) throw error;
+	return data;
+}
+
 export async function listLogsForDates(client: Client, userId: string, dateKeys: string[]) {
 	if (dateKeys.length === 0) return [] as HabitLog[];
 

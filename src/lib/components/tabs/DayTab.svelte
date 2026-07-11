@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import HabitFilterToggle from '$lib/components/HabitFilterToggle.svelte';
+	import SegmentedToggle from '$lib/components/SegmentedToggle.svelte';
 	import HabitRow from '$lib/components/HabitRow.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDayStore } from '$lib/habits/day.svelte';
-	import { parseHabitFilter, tabHref, type HabitFilter } from '$lib/habits/filter';
+	import { habitFilterOptions, parseHabitFilter, tabHref, type HabitFilter } from '$lib/habits/filter';
 	import { pendingHabitCount } from '$lib/habits/service';
 	import { shiftDateKey } from '$lib/habits/schedule';
 	import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
@@ -85,7 +85,13 @@
 		</div>
 
 		<div class="mt-4">
-			<HabitFilterToggle value={filter} {pendingCounts} onchange={(nextFilter) => setFilter(nextFilter as HabitFilter)} />
+			<SegmentedToggle
+				value={filter}
+				options={habitFilterOptions}
+				badges={pendingCounts}
+				ariaLabel="Habit filter"
+				onchange={(nextFilter) => setFilter(nextFilter as HabitFilter)}
+			/>
 		</div>
 	</header>
 

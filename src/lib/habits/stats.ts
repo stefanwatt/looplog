@@ -42,6 +42,45 @@ export type StatsSnapshot = {
 	habitRankings: HabitStatsSummary[];
 };
 
+export type HabitDayBreakdownEntry = {
+	habit: Habit;
+	result: HabitDayResult;
+	log: HabitLog | null;
+};
+
+export type DayBreakdown = {
+	dateKey: string;
+	adherence: number | null;
+	completion: number | null;
+	complete: boolean;
+	entries: HabitDayBreakdownEntry[];
+};
+
+export type StreakBreakInfo = {
+	dateKey: string;
+	missedHabits: Habit[];
+};
+
+export type BestStreakRun = {
+	length: number;
+	startDateKey: string;
+	endDateKey: string;
+	breakDateKey: string | null;
+	breakMissedHabits: Habit[];
+};
+
+export type HabitMetricImpact = {
+	habit: Habit;
+	dragPoints: number;
+	eligibleDays: number;
+};
+
+export const statsWindowOptions: { value: StatsWindow; label: string }[] = [
+	{ value: '7d', label: '7 days' },
+	{ value: '30d', label: '30 days' },
+	{ value: 'all', label: 'All time' }
+];
+
 export function trackingStartDate(logs: HabitLog[]): string | null {
 	if (logs.length === 0) return null;
 
@@ -64,6 +103,36 @@ export function habitArchivedDateKey(habit: Habit, timezone: string): string | n
 export function isPenaltyFreeSkip(habit: Habit, log: HabitLog, habitLogs: HabitLog[]): boolean {
 	if (log.status !== 'skipped' || !habit.allow_skip) return false;
 	return consecutiveSkips(habitLogs, log.log_date) < habit.max_consecutive_skips;
+}
+
+export function habitStatsStartDate(
+	habit: Habit,
+	habitLogs: HabitLog[],
+	timezone: string
+): string | null {
+	const firstLog = trackingStartDate(habitLogs);
+	if (!firstLog) return null;
+
+	const createdKey = habitCreatedDateKey(habit, timezone);
+	return firstLog > createdKey ? firstLog : createdKey;
+}
+
+export function statsTrackingStart(
+	habits: Habit[],
+	logs: HabitLog[],
+	timezone: string
+): string | null {
+	const logsByHabit = buildLogsByHabit(logs);
+	let earliest: string | null = null;
+
+	for (const habit of activeHabits(habits)) {
+		const habitLogs = logsByHabit.get(habit.id) ?? [];
+		const start = habitStatsStartDate(habit, habitLogs, timezone);
+		if (!start) continue;
+		if (!earliest || start < earliest) earliest = start;
+	}
+
+	return earliest;
 }
 
 export function isEligibleHabitDay(
@@ -168,8 +237,7 @@ export function computeDailyStats(
 	habits: Habit[],
 	logs: HabitLog[],
 	dateKey: string,
-	timezone: string,
-	trackingStart: string
+	timezone: string
 ): DailyStatsPoint {
 	const logsByHabit = buildLogsByHabit(logs);
 	const logsByHabitAndDate = buildLogsByHabitAndDate(logs);
@@ -181,8 +249,11 @@ export function computeDailyStats(
 
 	for (const habit of habits) {
 		const habitLogs = logsByHabit.get(habit.id) ?? [];
+		const habitStart = habitStatsStartDate(habit, habitLogs, timezone);
+		if (!habitStart) continue;
+
 		const log = logsByHabitAndDate.get(habit.id)?.get(dateKey) ?? null;
-		const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, trackingStart);
+		const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, habitStart);
 
 		if (result.outcome === 'excluded') continue;
 
@@ -224,7 +295,7 @@ export function computeHabitCurrentStreak(
 	timezone: string,
 	referenceDateKey: string
 ): number {
-	const trackingStart = trackingStartDate(logs) ?? habitCreatedDateKey(habit, timezone);
+	const trackingStart = habitStatsStartDate(habit, logs, timezone) ?? habitCreatedDateKey(habit, timezone);
 	const logsByDate = new Map(logs.map((log) => [log.log_date, log]));
 	let streak = 0;
 	let dateKey = referenceDateKey;
@@ -281,14 +352,23 @@ function computeStreaks(points: DailyStatsPoint[]): { current: number; best: num
 
 export function computeHabitStats(
 	habit: Habit,
-	logs: HabitLog[],
 	allLogs: HabitLog[],
 	start: string,
 	end: string,
-	timezone: string,
-	trackingStart: string
+	timezone: string
 ): HabitStatsSummary {
 	const habitLogs = allLogs.filter((log) => log.habit_id === habit.id);
+	const trackingStart = habitStatsStartDate(habit, habitLogs, timezone);
+
+	if (!trackingStart) {
+		return {
+			habit,
+			adherence: null,
+			completion: null,
+			eligibleDays: 0
+		};
+	}
+
 	const logsByDate = new Map(habitLogs.map((log) => [log.log_date, log]));
 	const dateKeys = dateKeysInclusive(start, end);
 
@@ -336,7 +416,7 @@ export function computeStatsSnapshot(
 	todayDateKey: string
 ): StatsSnapshot {
 	const habitsForStats = activeHabits(habits);
-	const trackingStart = trackingStartDate(logs);
+	const trackingStart = statsTrackingStart(habitsForStats, logs, timezone);
 	const emptyWindows = { '7d': null, '30d': null, all: null } as Record<StatsWindow, number | null>;
 
 	if (!trackingStart) {
@@ -361,7 +441,7 @@ export function computeStatsSnapshot(
 		const start = windowStartDate(todayDateKey, window, trackingStart);
 		const keys = dateKeysInclusive(start, todayDateKey);
 		const points = keys.map((dateKey) =>
-			computeDailyStats(habitsForStats, logs, dateKey, timezone, trackingStart)
+			computeDailyStats(habitsForStats, logs, dateKey, timezone)
 		);
 		dailySeries[window] = points;
 		adherence[window] = aggregateMetric(points, 'adherence');
@@ -377,11 +457,9 @@ export function computeStatsSnapshot(
 			computeHabitStats(
 				habit,
 				logs,
-				logs,
 				rankingWindowStart,
 				todayDateKey,
-				timezone,
-				trackingStart
+				timezone
 			)
 		)
 		.filter((summary) => summary.eligibleDays > 0)
@@ -485,4 +563,291 @@ export function chartValue(point: DailyStatsPoint, metric: StatsMetric): number 
 		case 'streak-best':
 			return point.complete ? 100 : point.completion != null ? 0 : null;
 	}
+}
+
+export function isClosedDay(dateKey: string, todayDateKey: string): boolean {
+	return dateKey < todayDateKey;
+}
+
+export function formatDateKey(dateKey: string): string {
+	const [year, month, day] = dateKey.split('-').map(Number);
+	return new Intl.DateTimeFormat(undefined, {
+		month: 'short',
+		day: 'numeric',
+		year: 'numeric'
+	}).format(new Date(year, month - 1, day));
+}
+
+export function outcomeLabel(result: HabitDayResult): string {
+	switch (result.outcome) {
+		case 'logged':
+			return result.score != null ? `${result.score}%` : 'Logged';
+		case 'missed':
+			return 'Missed';
+		case 'skip':
+			return 'Skipped';
+		case 'excluded':
+			return 'Not scheduled';
+	}
+}
+
+export function computeDayBreakdown(
+	habits: Habit[],
+	logs: HabitLog[],
+	dateKey: string,
+	timezone: string
+): DayBreakdown {
+	const habitsForStats = activeHabits(habits);
+	const logsByHabit = buildLogsByHabit(logs);
+	const logsByHabitAndDate = buildLogsByHabitAndDate(logs);
+	const daily = computeDailyStats(habitsForStats, logs, dateKey, timezone);
+
+	const entries: HabitDayBreakdownEntry[] = [];
+	for (const habit of habitsForStats) {
+		const habitLogs = logsByHabit.get(habit.id) ?? [];
+		const habitStart = habitStatsStartDate(habit, habitLogs, timezone);
+		if (!habitStart) continue;
+
+		const log = logsByHabitAndDate.get(habit.id)?.get(dateKey) ?? null;
+		const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, habitStart);
+		if (result.outcome === 'excluded') continue;
+		entries.push({ habit, result, log });
+	}
+
+	entries.sort((a, b) => a.habit.name.localeCompare(b.habit.name));
+
+	return {
+		dateKey,
+		adherence: daily.adherence,
+		completion: daily.completion,
+		complete: daily.complete,
+		entries
+	};
+}
+
+export function findLastClosedBreakDay(
+	points: DailyStatsPoint[],
+	todayDateKey: string
+): DailyStatsPoint | null {
+	for (let index = points.length - 1; index >= 0; index -= 1) {
+		const point = points[index];
+		if (!isClosedDay(point.dateKey, todayDateKey)) continue;
+		if (point.completion == null) continue;
+		if (!point.complete) return point;
+	}
+	return null;
+}
+
+export function computeStreakBreakInfo(
+	habits: Habit[],
+	logs: HabitLog[],
+	points: DailyStatsPoint[],
+	todayDateKey: string,
+	timezone: string
+): StreakBreakInfo | null {
+	const breakDay = findLastClosedBreakDay(points, todayDateKey);
+	if (!breakDay) return null;
+
+	const breakdown = computeDayBreakdown(habits, logs, breakDay.dateKey, timezone);
+	const missedHabits = breakdown.entries
+		.filter((entry) => entry.result.outcome === 'missed')
+		.map((entry) => entry.habit);
+
+	if (missedHabits.length === 0) return null;
+
+	return { dateKey: breakDay.dateKey, missedHabits };
+}
+
+export function computeBestStreakRun(
+	habits: Habit[],
+	logs: HabitLog[],
+	points: DailyStatsPoint[],
+	timezone: string
+): BestStreakRun | null {
+	const eligible = points.filter((point) => point.completion != null);
+	if (eligible.length === 0) return null;
+
+	let bestLength = 0;
+	let bestStart = '';
+	let bestEnd = '';
+	let bestEndIndex = -1;
+	let runLength = 0;
+	let runStart = '';
+
+	for (let index = 0; index < eligible.length; index += 1) {
+		const point = eligible[index];
+		if (point.complete) {
+			if (runLength === 0) runStart = point.dateKey;
+			runLength += 1;
+			if (runLength > bestLength) {
+				bestLength = runLength;
+				bestStart = runStart;
+				bestEnd = point.dateKey;
+				bestEndIndex = index;
+			}
+		} else {
+			runLength = 0;
+		}
+	}
+
+	if (bestLength === 0) return null;
+
+	let breakDateKey: string | null = null;
+	for (let index = bestEndIndex + 1; index < eligible.length; index += 1) {
+		if (!eligible[index].complete) {
+			breakDateKey = eligible[index].dateKey;
+			break;
+		}
+	}
+
+	const breakMissedHabits =
+		breakDateKey == null
+			? []
+			: computeDayBreakdown(habits, logs, breakDateKey, timezone)
+					.entries.filter((entry) => entry.result.outcome === 'missed')
+					.map((entry) => entry.habit);
+
+	return {
+		length: bestLength,
+		startDateKey: bestStart,
+		endDateKey: bestEnd,
+		breakDateKey,
+		breakMissedHabits
+	};
+}
+
+export function computeAdherenceImpact(
+	habits: Habit[],
+	logs: HabitLog[],
+	start: string,
+	end: string,
+	timezone: string
+): HabitMetricImpact[] {
+	const habitsForStats = activeHabits(habits);
+	const logsByHabit = buildLogsByHabit(logs);
+	const logsByHabitAndDate = buildLogsByHabitAndDate(logs);
+	const dateKeys = dateKeysInclusive(start, end);
+
+	const impacts = new Map<string, HabitMetricImpact>();
+
+	for (const habit of habitsForStats) {
+		impacts.set(habit.id, { habit, dragPoints: 0, eligibleDays: 0 });
+	}
+
+	for (const dateKey of dateKeys) {
+		const scored: { habit: Habit; score: number }[] = [];
+
+		for (const habit of habitsForStats) {
+			const habitLogs = logsByHabit.get(habit.id) ?? [];
+			const habitStart = habitStatsStartDate(habit, habitLogs, timezone);
+			if (!habitStart) continue;
+
+			const log = logsByHabitAndDate.get(habit.id)?.get(dateKey) ?? null;
+			const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, habitStart);
+
+			if (result.outcome !== 'logged' && result.outcome !== 'missed') continue;
+
+			scored.push({ habit, score: result.score ?? 0 });
+		}
+
+		if (scored.length === 0) continue;
+
+		const denominator = scored.length;
+		for (const { habit, score } of scored) {
+			const entry = impacts.get(habit.id);
+			if (!entry) continue;
+			entry.eligibleDays += 1;
+			entry.dragPoints += (100 - score) / denominator;
+		}
+	}
+
+	return [...impacts.values()]
+		.filter((entry) => entry.eligibleDays > 0)
+		.sort((a, b) => b.dragPoints - a.dragPoints);
+}
+
+export function computeCompletionImpact(
+	habits: Habit[],
+	logs: HabitLog[],
+	start: string,
+	end: string,
+	timezone: string
+): HabitMetricImpact[] {
+	const habitsForStats = activeHabits(habits);
+	const logsByHabit = buildLogsByHabit(logs);
+	const logsByHabitAndDate = buildLogsByHabitAndDate(logs);
+	const dateKeys = dateKeysInclusive(start, end);
+
+	const impacts = new Map<string, HabitMetricImpact>();
+
+	for (const habit of habitsForStats) {
+		impacts.set(habit.id, { habit, dragPoints: 0, eligibleDays: 0 });
+	}
+
+	for (const dateKey of dateKeys) {
+		const dayEntries: { habit: Habit; completed: boolean }[] = [];
+
+		for (const habit of habitsForStats) {
+			const habitLogs = logsByHabit.get(habit.id) ?? [];
+			const habitStart = habitStatsStartDate(habit, habitLogs, timezone);
+			if (!habitStart) continue;
+
+			const log = logsByHabitAndDate.get(habit.id)?.get(dateKey) ?? null;
+			const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, habitStart);
+
+			if (result.outcome === 'excluded') continue;
+
+			dayEntries.push({
+				habit,
+				completed: result.outcome === 'logged' || result.outcome === 'skip'
+			});
+		}
+
+		if (dayEntries.length === 0) continue;
+
+		const denominator = dayEntries.length;
+		for (const { habit, completed } of dayEntries) {
+			const entry = impacts.get(habit.id);
+			if (!entry) continue;
+			entry.eligibleDays += 1;
+			if (!completed) {
+				entry.dragPoints += 100 / denominator;
+			}
+		}
+	}
+
+	return [...impacts.values()]
+		.filter((entry) => entry.eligibleDays > 0)
+		.sort((a, b) => b.dragPoints - a.dragPoints);
+}
+
+export type HabitHistoryEntry = {
+	dateKey: string;
+	result: HabitDayResult;
+	log: HabitLog | null;
+};
+
+export function computeHabitHistory(
+	habit: Habit,
+	allLogs: HabitLog[],
+	start: string,
+	end: string,
+	timezone: string
+): HabitHistoryEntry[] {
+	const habitLogs = allLogs.filter((log) => log.habit_id === habit.id);
+	const trackingStart = habitStatsStartDate(habit, habitLogs, timezone);
+	if (!trackingStart) return [];
+
+	const logsByDate = new Map(habitLogs.map((log) => [log.log_date, log]));
+	const dateKeys = dateKeysInclusive(start, end);
+
+	const entries: HabitHistoryEntry[] = [];
+	for (const dateKey of dateKeys) {
+		const log = logsByDate.get(dateKey) ?? null;
+		const result = resolveHabitDay(habit, dateKey, log, habitLogs, timezone, trackingStart);
+		if (result.outcome === 'excluded') continue;
+		entries.push({ dateKey, result, log });
+	}
+
+	return entries.reverse();
 }

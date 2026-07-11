@@ -5,11 +5,15 @@
 	let {
 		points,
 		metric,
-		transitionName
+		selectedDateKey = null,
+		transitionName,
+		onselect
 	}: {
 		points: DailyStatsPoint[];
 		metric: StatsMetric;
+		selectedDateKey?: string | null;
 		transitionName?: string;
+		onselect?: (dateKey: string) => void;
 	} = $props();
 
 	const width = 320;
@@ -47,6 +51,10 @@
 		const line = chartPoints.map((point) => `L ${point.x} ${point.y}`).join(' ');
 		return `M ${first.x} ${baseline} L ${first.x} ${first.y} ${line} L ${last.x} ${baseline} Z`;
 	});
+
+	function handleSelect(dateKey: string) {
+		onselect?.(dateKey);
+	}
 </script>
 
 <div
@@ -96,7 +104,35 @@
 			/>
 
 			{#each chartPoints as point (point.dateKey)}
-				<circle cx={point.x} cy={point.y} r="3.5" fill="var(--ctp-blue)" />
+				{@const selected = selectedDateKey === point.dateKey}
+				{#if onselect}
+					<circle
+						cx={point.x}
+						cy={point.y}
+						r="14"
+						fill="transparent"
+						class="cursor-pointer"
+						role="button"
+						tabindex="0"
+						aria-label="View {point.dateKey}"
+						onclick={() => handleSelect(point.dateKey)}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								handleSelect(point.dateKey);
+							}
+						}}
+					/>
+				{/if}
+				<circle
+					cx={point.x}
+					cy={point.y}
+					r={selected ? 6 : 3.5}
+					fill={selected ? 'var(--ctp-mauve)' : 'var(--ctp-blue)'}
+					stroke={selected ? 'var(--ctp-base)' : 'none'}
+					stroke-width={selected ? 2 : 0}
+					pointer-events="none"
+				/>
 			{/each}
 
 			{#if chartPoints.length <= 8}
@@ -105,7 +141,9 @@
 						x={point.x}
 						y={height - 8}
 						text-anchor="middle"
-						fill="var(--ctp-subtext-0)"
+						fill={selectedDateKey === point.dateKey
+							? 'var(--ctp-mauve)'
+							: 'var(--ctp-subtext-0)'}
 						font-size="10"
 					>
 						{point.dateKey.slice(5)}

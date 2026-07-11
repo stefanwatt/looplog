@@ -1,6 +1,10 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Habit, HabitLog } from '$lib/database.types';
 import { getDayStore } from '$lib/habits/day.svelte';
+import {
+	getRealtimeStatusStore,
+	mapRealtimeSubscribeStatus
+} from '$lib/habits/realtime-status.svelte';
 import { createClient } from '$lib/supabase/client';
 
 let channel: RealtimeChannel | null = null;
@@ -16,6 +20,9 @@ export function startDayRealtime(userId: string) {
 
 	const supabase = createClient();
 	const store = getDayStore();
+	const realtimeStatus = getRealtimeStatusStore();
+
+	realtimeStatus.setStatus('connecting', 'SUBSCRIBING');
 
 	channel = supabase
 		.channel(`day:${userId}`)
@@ -60,6 +67,7 @@ export function startDayRealtime(userId: string) {
 			}
 		)
 		.subscribe((status) => {
+			realtimeStatus.setStatus(mapRealtimeSubscribeStatus(status), status);
 			clearChannelIfClosed(status);
 		});
 }
@@ -70,8 +78,15 @@ export function restartDayRealtime(userId: string) {
 }
 
 export function stopDayRealtime() {
-	if (!channel) return;
+	const realtimeStatus = getRealtimeStatusStore();
+
+	if (!channel) {
+		realtimeStatus.reset();
+		return;
+	}
+
 	const supabase = createClient();
 	supabase.removeChannel(channel);
 	channel = null;
+	realtimeStatus.reset();
 }
